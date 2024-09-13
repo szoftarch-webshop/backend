@@ -1,4 +1,6 @@
 using Backend.Dal.Context;
+using Backend.Dal.Interfaces;
+using Backend.Dal.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +19,9 @@ public class Program
 
 		builder.Services.AddDbContext<DataContext>(options =>
 			options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+		builder.Services.AddScoped<IProductRepository, ProductRepository>();
+		builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 
 		builder.Services.AddAuthorization();
 		builder.Services.AddIdentityApiEndpoints<IdentityUser>()

@@ -2,9 +2,10 @@
 
 namespace Backend.Dtos
 {
-	public record Product
+	public record ProductDto
 	(
 		int Id,
+		string SerialNumber,
 		string Name,
 		double Weight,
 		string Material,
@@ -12,6 +13,6 @@ namespace Backend.Dtos
 		int Price,
 		int Stock,
 		string ImageUrl,
-		List<int> CategoryIds
+		List<string> CategoryNames
 	);
 }

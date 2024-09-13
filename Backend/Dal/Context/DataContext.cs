@@ -30,7 +30,7 @@ namespace Backend.Dal.Context
                     .HasMaxLength(100);
                 entity.HasMany(e => e.Categories)
 					.WithMany(e => e.Products)
-					.UsingEntity(j => j.ToTable("Category"));
+					.UsingEntity(j => j.ToTable("ProductCategories"));
 			});
 
 			modelBuilder.Entity<Category>(entity =>
