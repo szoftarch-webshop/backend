@@ -22,10 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Dal\Entities\" />
     <Folder Include="Dal\Interfaces\" />
     <Folder Include="Dal\Repositories\" />
-    <Folder Include="Dtos\" />
   </ItemGroup>
 
 </Project>
