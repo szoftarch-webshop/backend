@@ -62,20 +62,37 @@ namespace Backend.Controllers
 		[HttpPost]
 		public async Task<IActionResult> AddProduct(ProductDto productDto)
 		{
-			var productId = await _productRepository.AddProductAsync(productDto);
-			return CreatedAtAction(nameof(GetProductById), new { id = productId }, productId);
+			try
+			{
+				var productId = await _productRepository.AddProductAsync(productDto);
+				return CreatedAtAction(nameof(GetProductById), new { id = productId }, productId);
+			}
+			catch (InvalidOperationException ex)
+			{
+				// Return a 400 Bad Request if one or more categories do not exist
+				return BadRequest(new { message = ex.Message });
+			}
 		}
 
 		// PUT: api/Product/{id}
 		[HttpPut("{id:int}")]
 		public async Task<IActionResult> UpdateProduct(int id, ProductDto productDto)
 		{
-			var success = await _productRepository.UpdateProductAsync(id, productDto);
-			if (!success)
+			try
 			{
-				return NotFound();
+				var success = await _productRepository.UpdateProductAsync(id, productDto);
+				if (!success)
+				{
+					return NotFound();
+				}
+				return NoContent();
 			}
-			return NoContent();
+			catch (InvalidOperationException ex)
+			{
+				// Return a 400 Bad Request if one or more categories do not exist
+				return BadRequest(new { message = ex.Message});
+			}
+			
 		}
 
 		// DELETE: api/Product/{id}

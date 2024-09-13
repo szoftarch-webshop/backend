@@ -12,9 +12,8 @@
 		public DateTime OrderDate { get; set; }
 		public ICollection<OrderItem> OrderItems { get; set; }
 		public int ShippingAddressId { get; set; }
-		public int PaymentMethodId { get; set; }
+		public int InvoiceId { get; set; }
 		public ShippingAddress ShippingAddress { get; set; }
-		public PaymentMethod PaymentMethod { get; set; }
 		public Invoice Invoice { get; set; }
 	}
 }

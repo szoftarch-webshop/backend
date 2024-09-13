@@ -11,7 +11,6 @@
 		public string CustomerCity { get; set; }
 		public string CustomerStreet { get; set; }
 		public DateTime CreationDate { get; set; }
-		public int OrderId { get; set; }
 		public int PaymentMethodId { get; set; }
 		public Order Order { get; set; }
 		public PaymentMethod PaymentMethod { get; set; }
