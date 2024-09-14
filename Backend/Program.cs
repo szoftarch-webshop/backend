@@ -4,8 +4,6 @@ using Backend.Dal.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend;
-
 public class Program
 {
 	public static async Task Main(string[] args)
@@ -24,10 +22,13 @@ public class Program
 		builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 		builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-		builder.Services.AddAuthorization();
+		// Add Identity services
 		builder.Services.AddIdentityApiEndpoints<IdentityUser>()
 			.AddRoles<IdentityRole>()
 			.AddEntityFrameworkStores<DataContext>();
+
+		// Add Authorization (skip adding any policies or configurations here if not needed)
+		builder.Services.AddAuthorization();
 
 		var app = builder.Build();
 
@@ -40,11 +41,18 @@ public class Program
 
 		app.UseHttpsRedirection();
 
-		app.UseAuthorization();
-		app.UseAuthentication();
+		// Only use authentication and authorization in non-development environments
+		if (!app.Environment.IsDevelopment())
+		{
+			app.UseAuthentication();
+			app.UseAuthorization();
+		}
+
+		// Map identity API endpoints
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
-		
+
+		// Seed roles and an admin user
 		using (var scope = app.Services.CreateScope())
 		{
 			var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -58,7 +66,7 @@ public class Program
 				}
 			}
 		}
-		
+
 		using (var scope = app.Services.CreateScope())
 		{
 			var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
@@ -68,12 +76,13 @@ public class Program
 
 			if (await userManager.FindByEmailAsync(email) == null)
 			{
-				var user = new IdentityUser();
-				user.UserName = email;
-				user.Email = email;
+				var user = new IdentityUser
+				{
+					UserName = email,
+					Email = email
+				};
 
 				await userManager.CreateAsync(user, password);
-
 				await userManager.AddToRoleAsync(user, "Admin");
 			}
 		}

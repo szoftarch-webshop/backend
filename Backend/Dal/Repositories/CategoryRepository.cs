@@ -81,6 +81,7 @@ namespace Backend.Dal.Repositories
             }
 
             category.Name = updatedCategoryDto.Name;
+            category.ParentCategoryId = updatedCategoryDto.ParentId;
             await _context.SaveChangesAsync();
 
             return true;
