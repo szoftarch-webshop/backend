@@ -21,8 +21,8 @@ namespace Backend.Dal.Interfaces
 		Task<ProductDto?> GetProductByIdAsync(int id);
 
 		// Admin
-		Task<int> AddProductAsync(CreateProductDto productDto);
-		Task<bool> UpdateProductAsync(int id, CreateProductDto productDto);
+		Task<int> AddProductAsync(ProductDto productDto, IFormFile image);
+		Task<bool> UpdateProductAsync(int id, ProductDto productDto, IFormFile image);
 		Task<bool> DeleteProductAsync(int id);
 		Task<bool> RestockProductAsync(int id, int additionalStock);
 	}

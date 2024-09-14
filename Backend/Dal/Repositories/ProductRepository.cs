@@ -10,15 +10,32 @@ namespace Backend.Dal.Repositories
     public class ProductRepository : IProductRepository
 	{
 		private readonly DataContext _context;
+		private readonly IWebHostEnvironment _webHostEnvironment;
 
-		public ProductRepository(DataContext context)
+		public ProductRepository(DataContext context, IWebHostEnvironment webHostEnvironment)
 		{
 			_context = context;
+			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public async Task<int> AddProductAsync(CreateProductDto productDto)
+		public async Task<int> AddProductAsync(ProductDto productDto, IFormFile image)
 		{
-			var product = new Product
+			string? imagePath = null;
+
+			if (image != null)
+			{
+				var fileName = $"{Guid.NewGuid()}-{Path.GetFileName(image.FileName)}";
+				var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+				await using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await image.CopyToAsync(stream);
+				}
+
+				imagePath = Path.Combine("images", fileName);
+			}
+
+			var productEntity = new Product
 			{
 				SerialNumber = productDto.SerialNumber,
 				Name = productDto.Name,
@@ -27,23 +44,14 @@ namespace Backend.Dal.Repositories
 				Description = productDto.Description,
 				Price = productDto.Price,
 				Stock = productDto.Stock,
-				ImageUrl = productDto.ImageUrl
+				ImageUrl = imagePath,
+				Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList()
 			};
-			var invalidCategories = productDto.CategoryNames
-				.Except(_context.Category.Select(c => c.Name))
-				.ToList();
 
-			if (invalidCategories.Count != 0)
-			{
-				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
-			}
-
-			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
-
-			_context.Product.Add(product);
+			_context.Product.Add(productEntity);
 			await _context.SaveChangesAsync();
 
-			return product.Id;
+			return productEntity.Id;
 		}
 
 		public async Task<bool> DeleteProductAsync(int id)
@@ -142,12 +150,26 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<bool> UpdateProductAsync(int id, CreateProductDto productDto)
+		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto, IFormFile image)
 		{
-			var product = await _context.Product.FindAsync(id);
+			var product = await _context.Product.Include(p => p.Categories).FirstOrDefaultAsync(p => p.Id == id);
 			if (product == null)
 			{
 				return false;
+			}
+
+			// Handle image upload if a new image is provided
+			if (image != null)
+			{
+				var fileName = $"{Guid.NewGuid()}-{Path.GetFileName(image.FileName)}";
+				var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+				await using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await image.CopyToAsync(stream);
+				}
+
+				product.ImageUrl = Path.Combine("images", fileName);
 			}
 
 			product.SerialNumber = productDto.SerialNumber;
@@ -157,40 +179,20 @@ namespace Backend.Dal.Repositories
 			product.Description = productDto.Description;
 			product.Price = productDto.Price;
 			product.Stock = productDto.Stock;
-			product.ImageUrl = productDto.ImageUrl;
-			var invalidCategories = productDto.CategoryNames
-				.Except(_context.Category.Select(c => c.Name))
-				.ToList();
 
-			if (invalidCategories.Count != 0)
+			// Get existing categories from the database
+			var existingCategories = await _context.Category
+				.Where(c => productDto.CategoryNames.Contains(c.Name))
+				.ToListAsync();
+
+			// Clear the existing categories
+			product.Categories.Clear();
+
+			// Add the existing categories from the DTO
+			foreach (var category in existingCategories)
 			{
-				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
+				product.Categories.Add(category);
 			}
-
-			var newCategoryNames = productDto.CategoryNames;
-
-			var categoriesToRemove = product.Categories
-				.Where(c => !newCategoryNames.Contains(c.Name))
-				.ToList();
-
-			var categoriesToAdd = _context.Category
-				.Where(c => newCategoryNames.Contains(c.Name))
-				.ToList();
-
-			foreach (var category in categoriesToRemove)
-			{
-				product.Categories.Remove(category);
-			}
-
-			foreach (var category in categoriesToAdd)
-			{
-				if (!product.Categories.Contains(category))
-				{
-					product.Categories.Add(category);
-				}
-			}
-
-			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
 
 			_context.Product.Update(product);
 			await _context.SaveChangesAsync();

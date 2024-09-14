@@ -55,6 +55,8 @@ public class Program
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
 
+		app.UseStaticFiles();
+		
 		// Seed roles and an admin user
 		using (var scope = app.Services.CreateScope())
 		{
