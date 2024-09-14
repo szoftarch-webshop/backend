@@ -42,7 +42,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ParentCategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Category");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Invoice", b =>
@@ -91,20 +91,14 @@ namespace Backend.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
                     b.Property<int>("PaymentMethodId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId")
-                        .IsUnique();
-
                     b.HasIndex("PaymentMethodId");
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoice");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Order", b =>
@@ -115,11 +109,11 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("PaymentMethodId")
-                        .HasColumnType("int");
 
                     b.Property<int>("ShippingAddressId")
                         .HasColumnType("int");
@@ -130,12 +124,13 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PaymentMethodId");
+                    b.HasIndex("InvoiceId")
+                        .IsUnique();
 
                     b.HasIndex("ShippingAddressId")
                         .IsUnique();
 
-                    b.ToTable("Orders");
+                    b.ToTable("Order");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.OrderItem", b =>
@@ -164,7 +159,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItem");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.PaymentMethod", b =>
@@ -182,7 +177,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PaymentMethods");
+                    b.ToTable("PaymentMethod");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Product", b =>
@@ -225,7 +220,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Product");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.ShippingAddress", b =>
@@ -273,7 +268,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ShippingAddresses");
+                    b.ToTable("ShippingAddress");
                 });
 
             modelBuilder.Entity("CategoryProduct", b =>
@@ -288,7 +283,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductsId");
 
-                    b.ToTable("ProductCategories", (string)null);
+                    b.ToTable("CategoryProduct");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -492,7 +487,7 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Dal.Entities.Category", b =>
                 {
                     b.HasOne("Backend.Dal.Entities.Category", "ParentCategory")
-                        .WithMany("InverseParentCategory")
+                        .WithMany("ChildrenCategories")
                         .HasForeignKey("ParentCategoryId");
 
                     b.Navigation("ParentCategory");
@@ -500,28 +495,20 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Dal.Entities.Invoice", b =>
                 {
-                    b.HasOne("Backend.Dal.Entities.Order", "Order")
-                        .WithOne("Invoice")
-                        .HasForeignKey("Backend.Dal.Entities.Invoice", "OrderId")
+                    b.HasOne("Backend.Dal.Entities.PaymentMethod", "PaymentMethod")
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Backend.Dal.Entities.PaymentMethod", "PaymentMethod")
-                        .WithMany("Invoices")
-                        .HasForeignKey("PaymentMethodId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Order");
 
                     b.Navigation("PaymentMethod");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Order", b =>
                 {
-                    b.HasOne("Backend.Dal.Entities.PaymentMethod", "PaymentMethod")
-                        .WithMany("Orders")
-                        .HasForeignKey("PaymentMethodId")
+                    b.HasOne("Backend.Dal.Entities.Invoice", "Invoice")
+                        .WithOne("Order")
+                        .HasForeignKey("Backend.Dal.Entities.Order", "InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -531,7 +518,7 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("PaymentMethod");
+                    b.Navigation("Invoice");
 
                     b.Navigation("ShippingAddress");
                 });
@@ -623,22 +610,18 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Dal.Entities.Category", b =>
                 {
-                    b.Navigation("InverseParentCategory");
+                    b.Navigation("ChildrenCategories");
+                });
+
+            modelBuilder.Entity("Backend.Dal.Entities.Invoice", b =>
+                {
+                    b.Navigation("Order")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Order", b =>
                 {
-                    b.Navigation("Invoice")
-                        .IsRequired();
-
                     b.Navigation("OrderItems");
-                });
-
-            modelBuilder.Entity("Backend.Dal.Entities.PaymentMethod", b =>
-                {
-                    b.Navigation("Invoices");
-
-                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Product", b =>
