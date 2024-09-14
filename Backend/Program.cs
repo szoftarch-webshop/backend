@@ -29,6 +29,8 @@ public class Program
 
 		// Add Authorization (skip adding any policies or configurations here if not needed)
 		builder.Services.AddAuthorization();
+		
+		builder.Services.AddCors();
 
 		var app = builder.Build();
 
@@ -40,14 +42,15 @@ public class Program
 		}
 
 		app.UseHttpsRedirection();
-
+		app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000"));
+		
 		// Only use authentication and authorization in non-development environments
 		if (!app.Environment.IsDevelopment())
 		{
 			app.UseAuthentication();
 			app.UseAuthorization();
 		}
-
+		
 		// Map identity API endpoints
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
