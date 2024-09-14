@@ -1,4 +1,4 @@
-﻿namespace Backend.Dtos.Orders;
+﻿namespace Backend.Dtos;
 
 public class PaginatedResult<T>
 {

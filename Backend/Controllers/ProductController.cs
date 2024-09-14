@@ -1,13 +1,13 @@
 ﻿using Backend.Dal.Context;
 using Backend.Dal.Interfaces;
 using Backend.Dal.Repositories;
-using Backend.Dtos;
+using Backend.Dtos.Products;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers
 {
-	[ApiController]
+    [ApiController]
 	[Route("api/[controller]")]
 	public class ProductController : ControllerBase
 	{
@@ -26,9 +26,9 @@ namespace Backend.Controllers
 			[FromQuery] string sortDirection = "asc",
 			[FromQuery] int? minPrice = null,
 			[FromQuery] int? maxPrice = null,
-			[FromQuery] string category = null,
-			[FromQuery] string material = null,
-			[FromQuery] string searchString = null)
+			[FromQuery] string? category = null,
+			[FromQuery] string? material = null,
+			[FromQuery] string? searchString = null)
 		{
 			var products = await _productRepository.GetAllProductsAsync(pageNumber, pageSize, sortBy, sortDirection, minPrice, maxPrice, category, material, searchString);
 			return Ok(products);
@@ -60,7 +60,7 @@ namespace Backend.Controllers
 
 		// POST: api/Product
 		[HttpPost]
-		public async Task<IActionResult> AddProduct(ProductDto productDto)
+		public async Task<IActionResult> AddProduct(CreateProductDto productDto)
 		{
 			try
 			{
@@ -76,7 +76,7 @@ namespace Backend.Controllers
 
 		// PUT: api/Product/{id}
 		[HttpPut("{id:int}")]
-		public async Task<IActionResult> UpdateProduct(int id, ProductDto productDto)
+		public async Task<IActionResult> UpdateProduct(int id, CreateProductDto productDto)
 		{
 			try
 			{

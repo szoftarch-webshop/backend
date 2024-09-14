@@ -2,11 +2,12 @@
 using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
+using Backend.Dtos.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Dal.Repositories
 {
-	public class ProductRepository : IProductRepository
+    public class ProductRepository : IProductRepository
 	{
 		private readonly DataContext _context;
 
@@ -15,7 +16,7 @@ namespace Backend.Dal.Repositories
 			_context = context;
 		}
 
-		public async Task<int> AddProductAsync(ProductDto productDto)
+		public async Task<int> AddProductAsync(CreateProductDto productDto)
 		{
 			var product = new Product
 			{
@@ -58,9 +59,9 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<IEnumerable<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string category, string material, string searchString)
+		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string? category, string? material, string? searchString)
 		{
-			var query = _context.Product.Include(p => p.Categories).AsQueryable();
+			var query = _context.Product.AsQueryable();
 
 			if (minPrice.HasValue)
 			{
@@ -95,18 +96,22 @@ namespace Backend.Dal.Repositories
 					_ => query // Default sorting logic (if needed)
 				};
 			}
-			query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+			var products = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
-			var products = await query.ToListAsync();
-
-			return products.Select(MapToProductDto).ToList();
+			return new PaginatedResult<ProductDto> 
+			{ 
+				CurrentPage = pageNumber, 
+				TotalItems = products.Count, 
+				TotalPages = 1,
+				Items = products.Select(MapToProductDto).ToList()
+			}; 
 		}
 
 		public async Task<ProductDto?> GetProductByIdAsync(int id)
 		{
 			var product = await _context.Product
 				.Include(p => p.Categories)
-				.FirstOrDefaultAsync(p => p.Id == id);
+			.FirstOrDefaultAsync(p => p.Id == id);
 
 			return product != null ? MapToProductDto(product) : null;
 		}
@@ -115,7 +120,7 @@ namespace Backend.Dal.Repositories
 		{
 			var product = await _context.Product
 				.Include(p => p.Categories)
-				.FirstOrDefaultAsync(p => p.SerialNumber == serialNumber);
+			.FirstOrDefaultAsync(p => p.SerialNumber == serialNumber);
 
 			return product != null ? MapToProductDto(product) : null;
 		}
@@ -134,11 +139,9 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto)
+		public async Task<bool> UpdateProductAsync(int id, CreateProductDto productDto)
 		{
-			var product = await _context.Product
-				.Include(p => p.Categories)
-				.FirstOrDefaultAsync(p => p.Id == id);
+			var product = await _context.Product.FindAsync(id);
 			if (product == null)
 			{
 				return false;
@@ -193,18 +196,18 @@ namespace Backend.Dal.Repositories
 
 		private static ProductDto MapToProductDto(Product product)
 		{
-			return new ProductDto(
-				product.Id,
-				product.SerialNumber,
-				product.Name,
-				product.Weight,
-				product.Material,
-				product.Description,
-				product.Price,
-				product.Stock,
-				product.ImageUrl,
-				product.Categories.Select(c => c.Name).ToList()
-			);
+			return new ProductDto {
+				Id = product.Id,
+				SerialNumber = product.SerialNumber,
+				Name = product.Name,
+				Weight = product.Weight,
+				Material = product.Material,
+				Description = product.Description,
+				Price = product.Price,
+				Stock = product.Stock,
+				ImageUrl =product.ImageUrl,
+				CategoryNames = product.Categories.Select(c => c.Name).ToList()
+			};
 		}
 	}
 }

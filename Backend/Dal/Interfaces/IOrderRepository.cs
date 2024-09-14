@@ -1,4 +1,5 @@
-﻿using Backend.Dtos.Orders;
+﻿using Backend.Dtos;
+using Backend.Dtos.Orders;
 
 namespace Backend.Dal.Interfaces;
 

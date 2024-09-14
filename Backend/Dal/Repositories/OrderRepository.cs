@@ -1,7 +1,9 @@
 ﻿using Backend.Dal.Context;
 using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
+using Backend.Dtos;
 using Backend.Dtos.Orders;
+using Backend.Dtos.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Dal.Repositories;
@@ -18,44 +20,38 @@ public class OrderRepository : IOrderRepository
         // POST: Create a new order
         public async Task<OrderDto> CreateOrderAsync(OrderDto orderDto)
         {
-            // Map OrderDto to Order entity
             var order = new Order
             {
                 Status = orderDto.Status,
                 OrderDate = orderDto.OrderDate,
-                ShippingAddressId = orderDto.ShippingAddress.Id, // Assuming ShippingAddress is already saved and has an ID
-                PaymentMethodId = orderDto.PaymentMethod.Id, // Assuming PaymentMethod is already saved and has an ID
+                ShippingAddressId = orderDto.ShippingAddress.Id,
                 OrderItems = orderDto.OrderItems.Select(item => new OrderItem
                 {
                     ProductId = item.ProductId,
                     Amount = item.Amount,
                     OrderedPrice = item.OrderedPrice
                 }).ToList(),
-                Invoice = orderDto.Invoice != null ? new Invoice
+                Invoice = orderDto.Invoice != null ? 
+                new Invoice
                 {
-                    // Map InvoiceDto to Invoice entity
-                    Id = orderDto.Invoice.Id,
-                    // Add other properties if needed
+					Id = orderDto.Invoice.Id,
                     CreationDate = orderDto.Invoice.CreationDate
                 } : null
             };
 
-            // Add the order to the context and save changes
-            _context.Orders.Add(order);
+            _context.Order.Add(order);
             await _context.SaveChangesAsync();
 
-            // Return the mapped OrderDto
             return MapToOrderDto(order);
         }
 
         // GET: Get list of orders with pagination, sorting, and filters
         public async Task<PaginatedResult<OrderDto>> GetOrdersAsync(int pageNumber, int pageSize, string sortBy, string status, DateTime? startDate, DateTime? endDate)
         {
-            var query = _context.Orders
-                .Include(o => o.OrderItems).ThenInclude(oi => oi.Product)
+            var query = _context.Order
+				.Include(o => o.OrderItems).ThenInclude(oi => oi.Product).ThenInclude(p => p.Categories)
                 .Include(o => o.ShippingAddress)
-                .Include(o => o.PaymentMethod)
-                .Include(o => o.Invoice)
+                .Include(o => o.Invoice).ThenInclude(i => i.PaymentMethod)
                 .AsQueryable();
 
             // Apply status filter
@@ -99,7 +95,7 @@ public class OrderRepository : IOrderRepository
         // PUT: Update the status of an existing order
         public async Task<bool> UpdateOrderStatusAsync(int orderId, UpdateOrderStatusDto updateOrderStatusDto)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Order.FindAsync(orderId);
             if (order == null)
             {
                 return false;
@@ -126,11 +122,6 @@ public class OrderRepository : IOrderRepository
                     City = order.ShippingAddress.City,
                     ZipCode = order.ShippingAddress.ZipCode
                 },
-                PaymentMethod = new PaymentMethodDto
-                {
-                    Id = order.PaymentMethod.Id,
-                    Name = order.PaymentMethod.Name
-                },
                 OrderItems = order.OrderItems.Select(oi => new OrderItemDto
                 {
                     ProductId = oi.ProductId,
@@ -139,9 +130,15 @@ public class OrderRepository : IOrderRepository
                     Product = new ProductDto
                     {
                         Id = oi.Product.Id,
+                        SerialNumber = oi.Product.SerialNumber,
                         Name = oi.Product.Name,
+                        Description = oi.Product.Description,
+                        Weight = oi.Product.Weight,
+                        Material = oi.Product.Material,
+                        Stock = oi.Product.Stock,
                         Price = oi.Product.Price,
-                        ImageUrl = oi.Product.ImageUrl
+                        ImageUrl = oi.Product.ImageUrl,
+                        CategoryNames = oi.Product.Categories.Select(c => c.Name).ToList()
                     }
                 }).ToList(),
                 Invoice = new InvoiceDto
@@ -158,14 +155,11 @@ public class OrderRepository : IOrderRepository
                     CustomerCountry = order.Invoice.CustomerCountry,
                     CustomerCity = order.Invoice.CustomerCity,
                     CustomerStreet = order.Invoice.CustomerStreet,
-
-                    // Mapping PaymentMethod details (if needed)
-                    PaymentMethodId = order.Invoice.PaymentMethodId,
-                    PaymentMethod = new PaymentMethodDto
+                    PaymentMethod =new PaymentMethodDto
                     {
                         Id = order.Invoice.PaymentMethod.Id,
-                        Name = order.Invoice.PaymentMethod.Name
-                    }
+                        Name = order.Invoice.PaymentMethod.Name,
+                    },
                 }
             };
         }

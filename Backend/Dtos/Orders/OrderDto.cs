@@ -7,6 +7,5 @@ public class OrderDto
     public DateTime OrderDate { get; set; }
     public ICollection<OrderItemDto> OrderItems { get; set; }
     public ShippingAddressDto ShippingAddress { get; set; }
-    public PaymentMethodDto PaymentMethod { get; set; }
     public InvoiceDto Invoice { get; set; }
 }

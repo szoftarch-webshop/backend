@@ -16,9 +16,18 @@ namespace Backend.Controllers
             _orderRepository = orderRepository;
         }
 
-        // POST: api/order
-        // Creates a new order
-        [HttpPost]
+		// GET: api/order?pageNumber=1&pageSize=10&sortBy=date&status=Shipped&startDate=2023-09-01&endDate=2023-09-10
+		// Gets a paginated list of orders with sorting and filtering options
+		[HttpGet]
+		public async Task<IActionResult> GetOrders([FromQuery] int pageNumber = 1, int pageSize = 10, string sortBy = "date", string status = null, DateTime? startDate = null, DateTime? endDate = null)
+		{
+			var orders = await _orderRepository.GetOrdersAsync(pageNumber, pageSize, sortBy, status, startDate, endDate);
+			return Ok(orders);
+		}
+
+		// POST: api/order
+		// Creates a new order
+		[HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] OrderDto createOrderDto)
         {
             if (!ModelState.IsValid)
@@ -29,16 +38,7 @@ namespace Backend.Controllers
             var createdOrder = await _orderRepository.CreateOrderAsync(createOrderDto);
             return Ok(createdOrder);
         }
-
-        // GET: api/order?pageNumber=1&pageSize=10&sortBy=date&status=Shipped&startDate=2023-09-01&endDate=2023-09-10
-        // Gets a paginated list of orders with sorting and filtering options
-        [HttpGet]
-        public async Task<IActionResult> GetOrders([FromQuery] int pageNumber = 1, int pageSize = 10, string sortBy = "date", string status = null, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var orders = await _orderRepository.GetOrdersAsync(pageNumber, pageSize, sortBy, status, startDate, endDate);
-            return Ok(orders);
-        }
-        
+       
         // PUT: api/order/{id}/status
         // Updates the status of an existing order
         [HttpPut("{id}/status")]

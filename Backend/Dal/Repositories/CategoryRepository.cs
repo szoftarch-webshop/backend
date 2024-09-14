@@ -18,7 +18,7 @@ namespace Backend.Dal.Repositories
         // GET: Retrieve all categories including parent-child hierarchy
         public async Task<IEnumerable<CategoryDto>> GetCategoriesAsync()
         {
-            var categories = await _context.Categories
+            var categories = await _context.Category
                 .Include(c => c.ChildrenCategories) // Assuming you have a navigation property for child categories
                 .ToListAsync();
 
@@ -34,7 +34,7 @@ namespace Backend.Dal.Repositories
                 ParentCategoryId = createCategoryDto.ParentId
             };
 
-            _context.Categories.Add(category);
+            _context.Category.Add(category);
             await _context.SaveChangesAsync();
 
             return MapToCategoryDto(category);
@@ -43,7 +43,7 @@ namespace Backend.Dal.Repositories
         // PUT: Rename an existing category
         public async Task<bool> RenameCategoryAsync(int categoryId, RenameCategoryDto? renameCategoryDto)
         {
-            var category = await _context.Categories.FindAsync(categoryId);
+            var category = await _context.Category.FindAsync(categoryId);
             if (category == null)
             {
                 return false;
@@ -58,13 +58,13 @@ namespace Backend.Dal.Repositories
         // DELETE: Delete an existing category by ID
         public async Task<bool> DeleteCategoryAsync(int categoryId)
         {
-            var category = await _context.Categories.FindAsync(categoryId);
+            var category = await _context.Category.FindAsync(categoryId);
             if (category == null)
             {
                 return false;
             }
 
-            _context.Categories.Remove(category);
+            _context.Category.Remove(category);
             await _context.SaveChangesAsync();
 
             return true;

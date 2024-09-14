@@ -1,4 +1,5 @@
 ﻿namespace Backend.Dtos.Orders;
+using Backend.Dtos.Products;
 
 public class OrderItemDto
 {
