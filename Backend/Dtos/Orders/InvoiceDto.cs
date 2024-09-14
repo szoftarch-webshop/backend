@@ -11,7 +11,6 @@ public class InvoiceDto
     public string CustomerCity { get; set; }
     public string CustomerStreet { get; set; }
     public DateTime CreationDate { get; set; }
-    public int OrderId { get; set; }
     public PaymentMethodDto PaymentMethod { get; set; }
 
 }

@@ -35,7 +35,7 @@ namespace Backend.Dal.Repositories
 
 			if (invalidCategories.Any())
 			{
-				throw new InvalidOperationException($"Categories not found: {string.Join(", ", invalidCategories)}");
+				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
 			}
 
 			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
@@ -96,13 +96,16 @@ namespace Backend.Dal.Repositories
 					_ => query // Default sorting logic (if needed)
 				};
 			}
+
+			var totalItems = await query.CountAsync();
+			var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 			var products = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
 			return new PaginatedResult<ProductDto> 
 			{ 
 				CurrentPage = pageNumber, 
-				TotalItems = products.Count, 
-				TotalPages = 1,
+				TotalItems = totalItems, 
+				TotalPages = totalPages,
 				Items = products.Select(MapToProductDto).ToList()
 			}; 
 		}
@@ -161,7 +164,7 @@ namespace Backend.Dal.Repositories
 
 			if (invalidCategories.Any())
 			{
-				throw new InvalidOperationException($"Categories not found: {string.Join(", ", invalidCategories)}");
+				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
 			}
 
 			var newCategoryNames = productDto.CategoryNames;

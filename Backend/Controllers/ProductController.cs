@@ -67,9 +67,8 @@ namespace Backend.Controllers
 				var productId = await _productRepository.AddProductAsync(productDto);
 				return CreatedAtAction(nameof(GetProductById), new { id = productId }, productId);
 			}
-			catch (InvalidOperationException ex)
+			catch (Exception ex)
 			{
-				// Return a 400 Bad Request if one or more categories do not exist
 				return BadRequest(new { message = ex.Message });
 			}
 		}

@@ -28,15 +28,21 @@ namespace Backend.Controllers
 		// POST: api/order
 		// Creates a new order
 		[HttpPost]
-        public async Task<IActionResult> CreateOrder([FromBody] OrderDto createOrderDto)
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto createOrderDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                var createdOrder = await _orderRepository.CreateOrderAsync(createOrderDto);
+                return Ok(createdOrder);
             }
-
-            var createdOrder = await _orderRepository.CreateOrderAsync(createOrderDto);
-            return Ok(createdOrder);
+            catch (Exception ex)
+            {
+				return BadRequest(new { message = ex.Message });
+			}
         }
        
         // PUT: api/order/{id}/status
