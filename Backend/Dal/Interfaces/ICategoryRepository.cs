@@ -10,8 +10,8 @@ namespace Backend.Dal.Interfaces
 		// POST: Create a new category using a DTO
 		Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto? createCategoryDto);
 
-		// PUT: Rename an existing category using a DTO
-		Task<bool> RenameCategoryAsync(int categoryId, RenameCategoryDto? renameCategoryDto);
+		// PUT: Update an existing category using a DTO
+		Task<bool> UpdateCategoryAsync(int categoryId, CreateCategoryDto? renameCategoryDto);
 
 		// DELETE: Delete an existing category by ID
 		Task<bool> DeleteCategoryAsync(int categoryId);

@@ -25,31 +25,62 @@ namespace Backend.Dal.Repositories
             return categories.Select(MapToCategoryDto).ToList();
         }
 
-        // POST: Create a new category
-        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto? createCategoryDto)
+		// POST: Create a new category
+		public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto? createCategoryDto)
+		{
+			if (createCategoryDto == null || string.IsNullOrWhiteSpace(createCategoryDto.Name))
+			{
+				throw new Exception("Category name is required.");
+			}
+
+			var existingCategory = await _context.Category.FirstOrDefaultAsync(c => c.Name == createCategoryDto.Name);
+			if (existingCategory != null)
+			{
+				throw new Exception("Category with the same name already exists.");
+			}
+
+			var category = new Category
+			{
+				Name = createCategoryDto.Name,
+				ParentCategoryId = createCategoryDto.ParentId
+			};
+
+			_context.Category.Add(category);
+			await _context.SaveChangesAsync();
+
+			return MapToCategoryDto(category);
+		}
+
+        // PUT: Update an existing category
+        public async Task<bool> UpdateCategoryAsync(int categoryId, CreateCategoryDto? updatedCategoryDto)
         {
-            var category = new Category
-            {
-                Name = createCategoryDto.Name,
-                ParentCategoryId = createCategoryDto.ParentId
-            };
+			if (updatedCategoryDto == null || string.IsNullOrWhiteSpace(updatedCategoryDto.Name))
+			{
+				throw new Exception("New category name is required.");
+			}
 
-            _context.Category.Add(category);
-            await _context.SaveChangesAsync();
+			if (updatedCategoryDto.ParentId.HasValue)
+			{
+				var parentCategory = await _context.Category.FindAsync(updatedCategoryDto.ParentId.Value);
+				if (parentCategory == null)
+				{
+					throw new Exception("Parent category does not exist.");
+				}
+			}
 
-            return MapToCategoryDto(category);
-        }
+			var existingCategory = await _context.Category.FirstOrDefaultAsync(c => c.Name == updatedCategoryDto.Name);
+			if (existingCategory != null)
+			{
+				throw new Exception("Category with the same name already exists.");
+			}
 
-        // PUT: Rename an existing category
-        public async Task<bool> RenameCategoryAsync(int categoryId, RenameCategoryDto? renameCategoryDto)
-        {
-            var category = await _context.Category.FindAsync(categoryId);
+			var category = await _context.Category.FindAsync(categoryId);
             if (category == null)
             {
                 return false;
             }
 
-            category.Name = renameCategoryDto.NewName;
+            category.Name = updatedCategoryDto.Name;
             await _context.SaveChangesAsync();
 
             return true;

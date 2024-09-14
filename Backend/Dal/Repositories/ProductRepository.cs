@@ -33,7 +33,7 @@ namespace Backend.Dal.Repositories
 				.Except(_context.Category.Select(c => c.Name))
 				.ToList();
 
-			if (invalidCategories.Any())
+			if (invalidCategories.Count != 0)
 			{
 				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
 			}
@@ -162,7 +162,7 @@ namespace Backend.Dal.Repositories
 				.Except(_context.Category.Select(c => c.Name))
 				.ToList();
 
-			if (invalidCategories.Any())
+			if (invalidCategories.Count != 0)
 			{
 				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
 			}

@@ -1,5 +1,6 @@
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,9 @@ namespace Backend.Controllers
 
         // GET: api/Category
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
+        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Customer")]
+		public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
         {
             var categories = await _categoryRepository.GetCategoriesAsync();
             return Ok(categories);
@@ -26,46 +29,41 @@ namespace Backend.Controllers
 
         // POST: api/Category
         [HttpPost]
-        public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto? createCategoryDto)
+		[Authorize(Roles = "Admin")]
+		public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto? createCategoryDto)
         {
-            if (createCategoryDto == null || string.IsNullOrWhiteSpace(createCategoryDto.Name))
+            try
             {
-                return BadRequest("Category name is required.");
-            }
-
-            var createdCategory = await _categoryRepository.CreateCategoryAsync(createCategoryDto);
-            return CreatedAtAction(nameof(GetCategories), new { id = createdCategory.Id }, createdCategory);
+                var createdCategory = await _categoryRepository.CreateCategoryAsync(createCategoryDto);
+                return CreatedAtAction(nameof(GetCategories), new { id = createdCategory.Id }, createdCategory);
+            } catch (Exception ex)
+            {
+				return BadRequest(ex.Message);
+			}
         }
 
         // PUT: api/Category/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> RenameCategory(int id, [FromBody] RenameCategoryDto? renameCategoryDto)
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> UpdateCategory(int id, [FromBody] CreateCategoryDto? updatedCategoryDto)
         {
-            if (renameCategoryDto == null || string.IsNullOrWhiteSpace(renameCategoryDto.NewName))
+            try
             {
-                return BadRequest("New category name is required.");
-            }
-
-            var success = await _categoryRepository.RenameCategoryAsync(id, renameCategoryDto);
-            if (!success)
+                var success = await _categoryRepository.UpdateCategoryAsync(id, updatedCategoryDto);
+                return success ? NoContent() : NotFound();
+            } catch (Exception ex)
             {
-                return NotFound();
+                return BadRequest(ex.Message);
             }
-
-            return NoContent();
         }
 
         // DELETE: api/Category/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> DeleteCategory(int id)
         {
             var success = await _categoryRepository.DeleteCategoryAsync(id);
-            if (!success)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
-        }
+			return success ? NoContent() : NotFound();
+		}
     }
 }

@@ -2,6 +2,7 @@
 using Backend.Dal.Interfaces;
 using Backend.Dal.Repositories;
 using Backend.Dtos.Products;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ namespace Backend.Controllers
 
 		// GET: api/Product
 		[HttpGet]
+		[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetAllProducts(
 			[FromQuery] int pageNumber = 1,
 			[FromQuery] int pageSize = 10,
@@ -36,30 +39,27 @@ namespace Backend.Controllers
 
 		// GET: api/Product/{id}
 		[HttpGet("{id:int}")]
+		[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetProductById(int id)
 		{
 			var product = await _productRepository.GetProductByIdAsync(id);
-			if (product == null)
-			{
-				return NotFound();
-			}
-			return Ok(product);
+			return product != null ? Ok(product): NotFound();
 		}
 
 		// GET: api/Product/serial/{serialNumber}
 		[HttpGet("serial/{serialNumber}")]
+		[Authorize(Roles = "Admin")]
+		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetProductBySerialNumber(string serialNumber)
 		{
 			var product = await _productRepository.GetProductBySerialNumberAsync(serialNumber);
-			if (product == null)
-			{
-				return NotFound();
-			}
-			return Ok(product);
+			return product != null ? Ok(product) : NotFound(); 
 		}
 
 		// POST: api/Product
 		[HttpPost]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> AddProduct(CreateProductDto productDto)
 		{
 			try
@@ -75,20 +75,16 @@ namespace Backend.Controllers
 
 		// PUT: api/Product/{id}
 		[HttpPut("{id:int}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> UpdateProduct(int id, CreateProductDto productDto)
 		{
 			try
 			{
 				var success = await _productRepository.UpdateProductAsync(id, productDto);
-				if (!success)
-				{
-					return NotFound();
-				}
-				return NoContent();
+				return success ? NoContent() : NotFound();
 			}
 			catch (InvalidOperationException ex)
 			{
-				// Return a 400 Bad Request if one or more categories do not exist
 				return BadRequest(new { message = ex.Message});
 			}
 			
@@ -96,26 +92,20 @@ namespace Backend.Controllers
 
 		// DELETE: api/Product/{id}
 		[HttpDelete("{id:int}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> DeleteProduct(int id)
 		{
 			var success = await _productRepository.DeleteProductAsync(id);
-			if (!success)
-			{
-				return NotFound();
-			}
-			return NoContent();
+			return success ? NoContent() : NotFound();
 		}
 
 		// PUT: api/Product/restock/{id}
 		[HttpPut("restock/{id:int}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> RestockProduct(int id, [FromBody] int additionalStock)
 		{
 			var success = await _productRepository.RestockProductAsync(id, additionalStock);
-			if (!success)
-			{
-				return NotFound();
-			}
-			return NoContent();
+			return success ? NoContent() : NotFound();
 		}
 
 	}

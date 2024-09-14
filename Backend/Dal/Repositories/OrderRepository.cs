@@ -64,6 +64,18 @@ public class OrderRepository : IOrderRepository
             };
 	}
 
+    // GET: Get a single order by ID
+    public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
+    {
+		var order = await _context.Order
+			.Include(o => o.OrderItems).ThenInclude(oi => oi.Product).ThenInclude(p => p.Categories)
+			.Include(o => o.ShippingAddress)
+			.Include(o => o.Invoice).ThenInclude(i => i.PaymentMethod)
+			.FirstOrDefaultAsync(o => o.Id == orderId);
+
+		return order == null ? null : MapToOrderDto(order);
+	}
+
 	// POST: Create a new order
 	public async Task<int> CreateOrderAsync(CreateOrderDto orderDto)
 	{
@@ -156,6 +168,21 @@ public class OrderRepository : IOrderRepository
 
         return true;
     }
+
+    // DELETE: Delete an existing order
+    public async Task<bool> DeleteOrderAsync(int orderId)
+    {
+		var order = await _context.Order.FindAsync(orderId);
+		if (order == null)
+        {
+			return false;
+		}
+
+		_context.Order.Remove(order);
+		await _context.SaveChangesAsync();
+
+		return true;
+	}
 
     // Helper method to map Order entity to OrderDto
     private OrderDto MapToOrderDto(Order order)
