@@ -20,7 +20,6 @@ namespace Backend.Controllers
 		// GET: api/order?pageNumber=1&pageSize=10&sortBy=date&status=Shipped&startDate=2023-09-01&endDate=2023-09-10
 		// Gets a paginated list of orders with sorting and filtering options
 		[HttpGet]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> GetOrders([FromQuery] int pageNumber = 1, int pageSize = 10, string sortBy = "date", string status = null, DateTime? startDate = null, DateTime? endDate = null)
 		{
 			var orders = await _orderRepository.GetOrdersAsync(pageNumber, pageSize, sortBy, status, startDate, endDate);
@@ -30,7 +29,6 @@ namespace Backend.Controllers
         // GET: api/order/{id}
         // Gets a single order by id
         [HttpGet("{id}")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> GetOrderById(int id)
         {
 			var order = await _orderRepository.GetOrderByIdAsync(id);
@@ -40,8 +38,6 @@ namespace Backend.Controllers
 		// POST: api/order
 		// Creates a new order
 		[HttpPost]
-		[Authorize(Roles = "Admin")]
-		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto createOrderDto)
         {
             try
@@ -62,7 +58,6 @@ namespace Backend.Controllers
         // PUT: api/order/{id}/status
         // Updates the status of an existing order
         [HttpPut("{id}/status")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusDto updateOrderStatusDto)
         {
             if (!ModelState.IsValid)
@@ -77,7 +72,6 @@ namespace Backend.Controllers
         // DELETE: api/order/{id}
         // Deletes an existing order
         [HttpDelete("{id}")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> DeleteOrder(int id)
         {
 			var deleted = await _orderRepository.DeleteOrderAsync(id);

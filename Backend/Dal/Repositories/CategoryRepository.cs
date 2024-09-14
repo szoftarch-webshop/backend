@@ -39,6 +39,15 @@ namespace Backend.Dal.Repositories
 				throw new Exception("Category with the same name already exists.");
 			}
 
+            if (createCategoryDto.ParentId.HasValue)
+            {
+				var parentCategory = await _context.Category.FindAsync(createCategoryDto.ParentId.Value);
+				if (parentCategory == null)
+                {
+					throw new Exception("Parent category does not exist.");
+				}
+			}
+
 			var category = new Category
 			{
 				Name = createCategoryDto.Name,
@@ -59,15 +68,6 @@ namespace Backend.Dal.Repositories
 				throw new Exception("New category name is required.");
 			}
 
-			if (updatedCategoryDto.ParentId.HasValue)
-			{
-				var parentCategory = await _context.Category.FindAsync(updatedCategoryDto.ParentId.Value);
-				if (parentCategory == null)
-				{
-					throw new Exception("Parent category does not exist.");
-				}
-			}
-
 			var existingCategory = await _context.Category.FirstOrDefaultAsync(c => c.Name == updatedCategoryDto.Name);
 			if (existingCategory != null)
 			{
@@ -80,7 +80,20 @@ namespace Backend.Dal.Repositories
                 return false;
             }
 
-            category.Name = updatedCategoryDto.Name;
+			if (updatedCategoryDto.ParentId.HasValue)
+			{
+				var parentCategory = await _context.Category.FindAsync(updatedCategoryDto.ParentId.Value);
+				if (parentCategory == null)
+				{
+					throw new Exception("Parent category does not exist.");
+				}
+                if(parentCategory.Id == category.Id)
+                {
+					throw new Exception("Category cannot be its own parent.");
+				}
+			}
+
+			category.Name = updatedCategoryDto.Name;
             category.ParentCategoryId = updatedCategoryDto.ParentId;
             await _context.SaveChangesAsync();
 

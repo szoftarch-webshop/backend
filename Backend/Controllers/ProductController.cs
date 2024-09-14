@@ -20,8 +20,6 @@ namespace Backend.Controllers
 
 		// GET: api/Product
 		[HttpGet]
-		[Authorize(Roles = "Admin")]
-		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetAllProducts(
 			[FromQuery] int pageNumber = 1,
 			[FromQuery] int pageSize = 10,
@@ -39,8 +37,6 @@ namespace Backend.Controllers
 
 		// GET: api/Product/{id}
 		[HttpGet("{id:int}")]
-		[Authorize(Roles = "Admin")]
-		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetProductById(int id)
 		{
 			var product = await _productRepository.GetProductByIdAsync(id);
@@ -49,8 +45,6 @@ namespace Backend.Controllers
 
 		// GET: api/Product/serial/{serialNumber}
 		[HttpGet("serial/{serialNumber}")]
-		[Authorize(Roles = "Admin")]
-		[Authorize(Roles = "Customer")]
 		public async Task<IActionResult> GetProductBySerialNumber(string serialNumber)
 		{
 			var product = await _productRepository.GetProductBySerialNumberAsync(serialNumber);
@@ -59,7 +53,6 @@ namespace Backend.Controllers
 
 		// POST: api/Product
 		[HttpPost]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> AddProduct(CreateProductDto productDto)
 		{
 			try
@@ -75,7 +68,6 @@ namespace Backend.Controllers
 
 		// PUT: api/Product/{id}
 		[HttpPut("{id:int}")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> UpdateProduct(int id, CreateProductDto productDto)
 		{
 			try
@@ -92,7 +84,6 @@ namespace Backend.Controllers
 
 		// DELETE: api/Product/{id}
 		[HttpDelete("{id:int}")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> DeleteProduct(int id)
 		{
 			var success = await _productRepository.DeleteProductAsync(id);
@@ -101,7 +92,6 @@ namespace Backend.Controllers
 
 		// PUT: api/Product/restock/{id}
 		[HttpPut("restock/{id:int}")]
-		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> RestockProduct(int id, [FromBody] int additionalStock)
 		{
 			var success = await _productRepository.RestockProductAsync(id, additionalStock);
