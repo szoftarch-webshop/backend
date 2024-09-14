@@ -97,8 +97,9 @@ namespace Backend.Dal.Repositories
 			}
 			query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
-			return await query
-				.Select(p => ConvertToProductDto(p)).ToListAsync();
+			var products = await query.ToListAsync();
+
+			return products.Select(MapToProductDto).ToList();
 		}
 
 		public async Task<ProductDto?> GetProductByIdAsync(int id)
@@ -107,7 +108,7 @@ namespace Backend.Dal.Repositories
 				.Include(p => p.Categories)
 				.FirstOrDefaultAsync(p => p.Id == id);
 
-			return ConvertToProductDto(product);
+			return product != null ? MapToProductDto(product) : null;
 		}
 
 		public async Task<ProductDto?> GetProductBySerialNumberAsync(string serialNumber)
@@ -116,7 +117,7 @@ namespace Backend.Dal.Repositories
 				.Include(p => p.Categories)
 				.FirstOrDefaultAsync(p => p.SerialNumber == serialNumber);
 
-			return ConvertToProductDto(product);
+			return product != null ? MapToProductDto(product) : null;
 		}
 
 		public async Task<bool> RestockProductAsync(int id, int additionalStock)
@@ -190,9 +191,9 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		private static ProductDto? ConvertToProductDto(Product? product)
+		private static ProductDto MapToProductDto(Product product)
 		{
-			return product == null ? null : new ProductDto(
+			return new ProductDto(
 				product.Id,
 				product.SerialNumber,
 				product.Name,
