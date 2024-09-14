@@ -33,7 +33,6 @@ namespace Backend.Dal.Context
 			modelBuilder.Entity<Category>(entity =>
 			{
 				entity.Property(e => e.Name).HasMaxLength(50);
-
 			});
 
 
