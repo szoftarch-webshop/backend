@@ -28,8 +28,18 @@ namespace Backend.Dal.Repositories
 				Stock = productDto.Stock,
 				ImageUrl = productDto.ImageUrl
 			};
+			var invalidCategories = productDto.CategoryNames
+				.Except(_context.Category.Select(c => c.Name))
+				.ToList();
 
-			_context.Products.Add(product);
+			if (invalidCategories.Any())
+			{
+				throw new InvalidOperationException($"Categories not found: {string.Join(", ", invalidCategories)}");
+			}
+
+			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
+
+			_context.Product.Add(product);
 			await _context.SaveChangesAsync();
 
 			return product.Id;
@@ -37,20 +47,20 @@ namespace Backend.Dal.Repositories
 
 		public async Task<bool> DeleteProductAsync(int id)
 		{
-			var product = await _context.Products.FindAsync(id);
+			var product = await _context.Product.FindAsync(id);
 			if (product == null)
 			{
 				return false;
 			}
 
-			_context.Products.Remove(product);
+			_context.Product.Remove(product);
 			await _context.SaveChangesAsync();
 			return true;
 		}
 
 		public async Task<IEnumerable<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string category, string material, string searchString)
 		{
-			var query = _context.Products.AsQueryable();
+			var query = _context.Product.Include(p => p.Categories).AsQueryable();
 
 			if (minPrice.HasValue)
 			{
@@ -87,43 +97,48 @@ namespace Backend.Dal.Repositories
 			}
 			query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
-			return await query
-				.Select(p => ConvertToProductDto(p)).ToListAsync();
+			var products = await query.ToListAsync();
+
+			return products.Select(MapToProductDto).ToList();
 		}
 
 		public async Task<ProductDto?> GetProductByIdAsync(int id)
 		{
-			var product = await _context.Products
-			.FirstOrDefaultAsync(p => p.Id == id);
+			var product = await _context.Product
+				.Include(p => p.Categories)
+				.FirstOrDefaultAsync(p => p.Id == id);
 
-			return ConvertToProductDto(product);
+			return product != null ? MapToProductDto(product) : null;
 		}
 
 		public async Task<ProductDto?> GetProductBySerialNumberAsync(string serialNumber)
 		{
-			var product = await _context.Products
-			.FirstOrDefaultAsync(p => p.SerialNumber == serialNumber);
+			var product = await _context.Product
+				.Include(p => p.Categories)
+				.FirstOrDefaultAsync(p => p.SerialNumber == serialNumber);
 
-			return ConvertToProductDto(product);
+			return product != null ? MapToProductDto(product) : null;
 		}
 
 		public async Task<bool> RestockProductAsync(int id, int additionalStock)
 		{
-			var product = await _context.Products.FindAsync(id);
+			var product = await _context.Product.FindAsync(id);
 			if (product == null)
 			{
 				return false;
 			}
 
 			product.Stock += additionalStock;
-			_context.Products.Update(product);
+			_context.Product.Update(product);
 			await _context.SaveChangesAsync();
 			return true;
 		}
 
 		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto)
 		{
-			var product = await _context.Products.FindAsync(id);
+			var product = await _context.Product
+				.Include(p => p.Categories)
+				.FirstOrDefaultAsync(p => p.Id == id);
 			if (product == null)
 			{
 				return false;
@@ -137,15 +152,48 @@ namespace Backend.Dal.Repositories
 			product.Price = productDto.Price;
 			product.Stock = productDto.Stock;
 			product.ImageUrl = productDto.ImageUrl;
+			var invalidCategories = productDto.CategoryNames
+				.Except(_context.Category.Select(c => c.Name))
+				.ToList();
 
-			_context.Products.Update(product);
+			if (invalidCategories.Any())
+			{
+				throw new InvalidOperationException($"Categories not found: {string.Join(", ", invalidCategories)}");
+			}
+
+			var newCategoryNames = productDto.CategoryNames;
+
+			var categoriesToRemove = product.Categories
+				.Where(c => !newCategoryNames.Contains(c.Name))
+				.ToList();
+
+			var categoriesToAdd = _context.Category
+				.Where(c => newCategoryNames.Contains(c.Name))
+				.ToList();
+
+			foreach (var category in categoriesToRemove)
+			{
+				product.Categories.Remove(category);
+			}
+
+			foreach (var category in categoriesToAdd)
+			{
+				if (!product.Categories.Contains(category))
+				{
+					product.Categories.Add(category);
+				}
+			}
+
+			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
+
+			_context.Product.Update(product);
 			await _context.SaveChangesAsync();
 			return true;
 		}
 
-		private static ProductDto? ConvertToProductDto(Product? product)
+		private static ProductDto MapToProductDto(Product product)
 		{
-			return product == null ? null : new ProductDto(
+			return new ProductDto(
 				product.Id,
 				product.SerialNumber,
 				product.Name,
