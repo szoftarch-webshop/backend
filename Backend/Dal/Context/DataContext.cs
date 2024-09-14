@@ -38,7 +38,7 @@ namespace Backend.Dal.Context
 				entity.Property(e => e.Name).HasMaxLength(50);
 
 				entity.HasOne(d => d.ParentCategory)
-					.WithMany(p => p.InverseParentCategory)
+					.WithMany(p => p.ChildrenCategories)
 					.HasForeignKey(d => d.ParentCategoryId);
 			});
 
