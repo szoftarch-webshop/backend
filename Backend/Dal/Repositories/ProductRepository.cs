@@ -61,7 +61,7 @@ namespace Backend.Dal.Repositories
 
 		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string? category, string? material, string? searchString)
 		{
-			var query = _context.Product.AsQueryable();
+			var query = _context.Product.Include(p => p.Categories).AsQueryable();
 
 			if (minPrice.HasValue)
 			{
@@ -114,7 +114,7 @@ namespace Backend.Dal.Repositories
 		{
 			var product = await _context.Product
 				.Include(p => p.Categories)
-			.FirstOrDefaultAsync(p => p.Id == id);
+				.FirstOrDefaultAsync(p => p.Id == id);
 
 			return product != null ? MapToProductDto(product) : null;
 		}
