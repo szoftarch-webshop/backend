@@ -22,7 +22,7 @@ namespace Backend.Dal.Interfaces
 
 		// Admin
 		Task<int> AddProductAsync(CreateProductDto productDto);
-		Task<bool> UpdateProductAsync(int id, CreateProductDto productDto);
+		Task<bool> UpdateProductAsync(int id, ProductDto productDto);
 		Task<bool> DeleteProductAsync(int id);
 		Task<bool> RestockProductAsync(int id, int additionalStock);
 	}

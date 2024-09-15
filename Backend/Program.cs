@@ -3,6 +3,7 @@ using Backend.Dal.Interfaces;
 using Backend.Dal.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 public class Program
 {
@@ -25,12 +26,30 @@ public class Program
 		// Add Identity services
 		builder.Services.AddIdentityApiEndpoints<IdentityUser>()
 			.AddRoles<IdentityRole>()
-			.AddEntityFrameworkStores<DataContext>();
+			.AddEntityFrameworkStores<DataContext>()
+			.AddDefaultTokenProviders();
 
 		// Add Authorization (skip adding any policies or configurations here if not needed)
 		builder.Services.AddAuthorization();
-		
-		builder.Services.AddCors();
+
+		builder.Services.AddCors(options =>
+		{
+			options.AddPolicy("AllowSpecificOrigin",
+				builder =>
+				{
+					builder.WithOrigins("http://localhost:3000")
+						   .AllowAnyMethod()
+						   .AllowAnyHeader()
+						   .AllowCredentials(); // Allow credentials (cookies)
+				});
+		});
+
+		builder.Services.ConfigureApplicationCookie(options =>
+		{
+			options.Cookie.SameSite = SameSiteMode.None; // Required for cross-origin cookie sharing
+			options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Required for HTTPS
+			options.Cookie.HttpOnly = true;
+		});
 
 		var app = builder.Build();
 
@@ -42,18 +61,19 @@ public class Program
 		}
 
 		app.UseHttpsRedirection();
-		app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000"));
+		app.UseCors("AllowSpecificOrigin");
 		
-		// Only use authentication and authorization in non-development environments
-		if (!app.Environment.IsDevelopment())
-		{
-			app.UseAuthentication();
-			app.UseAuthorization();
-		}
+		app.UseAuthorization();
 		
 		// Map identity API endpoints
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
+
+		app.MapGet("/pingauth", (ClaimsPrincipal user) =>
+		{
+			var email = user.FindFirstValue(ClaimTypes.Email); // get the user's email from the claim
+			return Results.Json(new { Email = email }); ; // return the email as a plain text response
+		}).RequireAuthorization();
 
 		// Seed roles and an admin user
 		using (var scope = app.Services.CreateScope())
