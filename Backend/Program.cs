@@ -1,6 +1,7 @@
 using Backend.Dal.Context;
 using Backend.Dal.Interfaces;
 using Backend.Dal.Repositories;
+using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -22,6 +23,8 @@ public class Program
 		builder.Services.AddScoped<IProductRepository, ProductRepository>();
 		builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 		builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+		builder.Services.AddScoped<CategoryService>();
 
 		// Add Identity services
 		builder.Services.AddIdentityApiEndpoints<IdentityUser>()
@@ -68,6 +71,14 @@ public class Program
 		// Map identity API endpoints
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
+
+		app.MapPost("/logout", async (SignInManager<IdentityUser> signInManager) =>
+		{
+
+			await signInManager.SignOutAsync();
+			return Results.Ok();
+
+		}).RequireAuthorization();
 
 		app.MapGet("/pingauth", (ClaimsPrincipal user) =>
 		{

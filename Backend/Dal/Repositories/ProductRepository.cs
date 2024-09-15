@@ -3,16 +3,19 @@ using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
 using Backend.Dtos.Products;
+using Backend.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Dal.Repositories
 {
     public class ProductRepository : IProductRepository
 	{
+		private readonly CategoryService _categoryService;
 		private readonly DataContext _context;
 
-		public ProductRepository(DataContext context)
+		public ProductRepository(CategoryService categoryService, DataContext context)
 		{
+			_categoryService = categoryService;
 			_context = context;
 		}
 
@@ -74,7 +77,16 @@ namespace Backend.Dal.Repositories
 
 			if (!string.IsNullOrEmpty(category))
 			{
-				query = query.Where(p => p.Categories.Any(c => c.Name == category));
+				var categoryId = _context.Category
+					.Where(c => c.Name == category)
+					.Select(c => c.Id)
+					.FirstOrDefault();
+
+				if (categoryId != 0)
+				{
+					var categoryIdsToSearch = _categoryService.GetAllDescendantCategoryIds(categoryId);
+					query = query.Where(p => p.Categories.Any(c => categoryIdsToSearch.Contains(c.Id)));
+				}
 			}
 
 			if (!string.IsNullOrEmpty(material))

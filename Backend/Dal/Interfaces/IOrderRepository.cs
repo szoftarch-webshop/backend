@@ -6,7 +6,7 @@ namespace Backend.Dal.Interfaces;
 public interface IOrderRepository
 {
     // GET: Get list of orders with pagination, sorting, and filters
-    Task<PaginatedResult<OrderDto>> GetOrdersAsync(int pageNumber, int pageSize, string sortBy, string status, DateTime? startDate, DateTime? endDate);
+    Task<PaginatedResult<OrderDto>> GetOrdersAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, string status, DateTime? startDate, DateTime? endDate);
 
 	Task<OrderDto?> GetOrderByIdAsync(int orderId);
 
