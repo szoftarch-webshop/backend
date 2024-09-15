@@ -79,12 +79,12 @@ namespace Backend.Dal.Repositories
 
 			if (!string.IsNullOrEmpty(material))
 			{
-				query = query.Where(p => p.Material == material);
+				query = query.Where(p => p.Material.Contains(material));
 			}
 
 			if (!string.IsNullOrEmpty(searchString))
 			{
-				query = query.Where(p => p.Name.Contains(searchString));
+				query = query.Where(p => p.Name.Contains(searchString) || p.SerialNumber.Contains(searchString));
 			}
 
 			if (!string.IsNullOrEmpty(sortBy))
@@ -142,9 +142,12 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<bool> UpdateProductAsync(int id, CreateProductDto productDto)
+		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto)
 		{
-			var product = await _context.Product.FindAsync(id);
+			var product = await _context.Product
+				.Include(p => p.Categories)
+				.FirstOrDefaultAsync(p => p.Id == id);
+
 			if (product == null)
 			{
 				return false;
@@ -158,23 +161,22 @@ namespace Backend.Dal.Repositories
 			product.Price = productDto.Price;
 			product.Stock = productDto.Stock;
 			product.ImageUrl = productDto.ImageUrl;
+
 			var invalidCategories = productDto.CategoryNames
 				.Except(_context.Category.Select(c => c.Name))
 				.ToList();
-
 			if (invalidCategories.Count != 0)
 			{
 				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
 			}
 
 			var newCategoryNames = productDto.CategoryNames;
-
 			var categoriesToRemove = product.Categories
 				.Where(c => !newCategoryNames.Contains(c.Name))
 				.ToList();
 
 			var categoriesToAdd = _context.Category
-				.Where(c => newCategoryNames.Contains(c.Name))
+				.Where(c => newCategoryNames.Contains(c.Name) && !product.Categories.Contains(c))
 				.ToList();
 
 			foreach (var category in categoriesToRemove)
@@ -184,13 +186,9 @@ namespace Backend.Dal.Repositories
 
 			foreach (var category in categoriesToAdd)
 			{
-				if (!product.Categories.Contains(category))
-				{
-					product.Categories.Add(category);
-				}
+				product.Categories.Add(category);
 			}
 
-			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
 
 			_context.Product.Update(product);
 			await _context.SaveChangesAsync();

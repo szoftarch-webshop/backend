@@ -27,6 +27,7 @@ namespace Backend.Controllers
 
         // POST: api/Category
         [HttpPost]
+		[Authorize(Roles = "Admin")]
 		public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto? createCategoryDto)
         {
             try
@@ -41,6 +42,7 @@ namespace Backend.Controllers
 
         // PUT: api/Category/{id}
         [HttpPut("{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> UpdateCategory(int id, [FromBody] CreateCategoryDto? updatedCategoryDto)
         {
             try
@@ -55,6 +57,7 @@ namespace Backend.Controllers
 
         // DELETE: api/Category/{id}
         [HttpDelete("{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> DeleteCategory(int id)
         {
             var success = await _categoryRepository.DeleteCategoryAsync(id);

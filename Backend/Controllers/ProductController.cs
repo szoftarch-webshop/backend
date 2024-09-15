@@ -36,7 +36,7 @@ namespace Backend.Controllers
 		}
 
 		// GET: api/Product/{id}
-		[HttpGet("{id:int}")]
+		[HttpGet("{id}")]
 		public async Task<IActionResult> GetProductById(int id)
 		{
 			var product = await _productRepository.GetProductByIdAsync(id);
@@ -53,6 +53,7 @@ namespace Backend.Controllers
 
 		// POST: api/Product
 		[HttpPost]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> AddProduct(CreateProductDto productDto)
 		{
 			try
@@ -67,8 +68,9 @@ namespace Backend.Controllers
 		}
 
 		// PUT: api/Product/{id}
-		[HttpPut("{id:int}")]
-		public async Task<IActionResult> UpdateProduct(int id, CreateProductDto productDto)
+		[HttpPut("{id}")]
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> UpdateProduct(int id, ProductDto productDto)
 		{
 			try
 			{
@@ -83,7 +85,8 @@ namespace Backend.Controllers
 		}
 
 		// DELETE: api/Product/{id}
-		[HttpDelete("{id:int}")]
+		[HttpDelete("{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> DeleteProduct(int id)
 		{
 			var success = await _productRepository.DeleteProductAsync(id);
@@ -91,7 +94,8 @@ namespace Backend.Controllers
 		}
 
 		// PUT: api/Product/restock/{id}
-		[HttpPut("restock/{id:int}")]
+		[HttpPut("restock/{id}")]
+		[Authorize(Roles = "Admin")]
 		public async Task<IActionResult> RestockProduct(int id, [FromBody] int additionalStock)
 		{
 			var success = await _productRepository.RestockProductAsync(id, additionalStock);

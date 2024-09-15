@@ -68,7 +68,7 @@ namespace Backend.Dal.Repositories
 				throw new Exception("New category name is required.");
 			}
 
-			var existingCategory = await _context.Category.FirstOrDefaultAsync(c => c.Name == updatedCategoryDto.Name);
+			var existingCategory = await _context.Category.SingleOrDefaultAsync(c => c.Name == updatedCategoryDto.Name && c.Id != categoryId);
 			if (existingCategory != null)
 			{
 				throw new Exception("Category with the same name already exists.");
