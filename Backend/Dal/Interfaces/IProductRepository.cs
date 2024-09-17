@@ -13,7 +13,7 @@ namespace Backend.Dal.Interfaces
 			string sortDirection,
 			int? minPrice,
 			int? maxPrice,
-			string? category,
+			int? category,
 			string? material,
 			string? searchString
 		);

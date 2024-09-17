@@ -62,7 +62,7 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string? category, string? material, string? searchString)
+		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, int? category, string? material, string? searchString)
 		{
 			var query = _context.Product.Include(p => p.Categories).AsQueryable();
 
@@ -75,10 +75,10 @@ namespace Backend.Dal.Repositories
 				query = query.Where(p => p.Price <= maxPrice.Value);
 			}
 
-			if (!string.IsNullOrEmpty(category))
+			if (category != null)
 			{
 				var categoryId = _context.Category
-					.Where(c => c.Name == category)
+					.Where(c => c.Id == category)
 					.Select(c => c.Id)
 					.FirstOrDefault();
 

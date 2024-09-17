@@ -27,7 +27,7 @@ namespace Backend.Controllers
 			[FromQuery] string sortDirection = "asc",
 			[FromQuery] int? minPrice = null,
 			[FromQuery] int? maxPrice = null,
-			[FromQuery] string? category = null,
+			[FromQuery] int? category = null,
 			[FromQuery] string? material = null,
 			[FromQuery] string? searchString = null)
 		{
