@@ -77,16 +77,8 @@ namespace Backend.Dal.Repositories
 
 			if (category != null)
 			{
-				var categoryId = _context.Category
-					.Where(c => c.Id == category)
-					.Select(c => c.Id)
-					.FirstOrDefault();
-
-				if (categoryId != 0)
-				{
-					var categoryIdsToSearch = _categoryService.GetAllDescendantCategoryIds(categoryId);
-					query = query.Where(p => p.Categories.Any(c => categoryIdsToSearch.Contains(c.Id)));
-				}
+				var categoryIdsToSearch = _categoryService.GetAllDescendantCategoryIds((int)category);
+				query = query.Where(p => p.Categories.Any(c => categoryIdsToSearch.Contains(c.Id)));
 			}
 
 			if (!string.IsNullOrEmpty(material))
