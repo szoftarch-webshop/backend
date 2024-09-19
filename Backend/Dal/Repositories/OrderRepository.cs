@@ -18,7 +18,7 @@ public class OrderRepository : IOrderRepository
         }
 
         // GET: Get list of orders with pagination, sorting, and filters
-        public async Task<PaginatedResult<OrderDto>> GetOrdersAsync(int pageNumber, int pageSize, string sortBy, string status, DateTime? startDate, DateTime? endDate)
+        public async Task<PaginatedResult<OrderDto>> GetOrdersAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, string status, DateTime? startDate, DateTime? endDate)
         {
             var query = _context.Order
 				.Include(o => o.OrderItems).ThenInclude(oi => oi.Product).ThenInclude(p => p.Categories)
@@ -45,8 +45,8 @@ public class OrderRepository : IOrderRepository
             // Apply sorting
             query = sortBy?.ToLower() switch
             {
-                "date" => query.OrderBy(o => o.OrderDate),
-                "status" => query.OrderBy(o => o.Status),
+                "date" => sortDirection.ToLower() == "desc" ? query.OrderByDescending(o => o.OrderDate) : query.OrderBy(o => o.OrderDate),
+                "customer" => sortDirection.ToLower() == "desc" ? query.OrderByDescending(o => o.Invoice.CustomerName) : query.OrderBy(o => o.Invoice.CustomerName),
                 _ => query.OrderBy(o => o.Id)
             };
 
@@ -172,12 +172,18 @@ public class OrderRepository : IOrderRepository
     // DELETE: Delete an existing order
     public async Task<bool> DeleteOrderAsync(int orderId)
     {
-		var order = await _context.Order.FindAsync(orderId);
+		var order = await _context.Order
+            .Include(o => o.Invoice)
+            .Include(o => o.OrderItems)
+            .Include(o => o.ShippingAddress)
+            .SingleOrDefaultAsync(o => o.Id == orderId);
 		if (order == null)
         {
 			return false;
 		}
-
+        _context.Invoice.Remove(order.Invoice);
+        _context.ShippingAddress.Remove(order.ShippingAddress);
+        _context.OrderItem.RemoveRange(order.OrderItems);
 		_context.Order.Remove(order);
 		await _context.SaveChangesAsync();
 

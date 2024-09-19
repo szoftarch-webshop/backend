@@ -3,16 +3,19 @@ using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
 using Backend.Dtos.Products;
+using Backend.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Dal.Repositories
 {
     public class ProductRepository : IProductRepository
 	{
+		private readonly CategoryService _categoryService;
 		private readonly DataContext _context;
 
-		public ProductRepository(DataContext context)
+		public ProductRepository(CategoryService categoryService, DataContext context)
 		{
+			_categoryService = categoryService;
 			_context = context;
 		}
 
@@ -59,7 +62,7 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, string? category, string? material, string? searchString)
+		public async Task<PaginatedResult<ProductDto>> GetAllProductsAsync(int pageNumber, int pageSize, string sortBy, string sortDirection, int? minPrice, int? maxPrice, int? category, string? material, string? searchString)
 		{
 			var query = _context.Product.Include(p => p.Categories).AsQueryable();
 
@@ -72,9 +75,10 @@ namespace Backend.Dal.Repositories
 				query = query.Where(p => p.Price <= maxPrice.Value);
 			}
 
-			if (!string.IsNullOrEmpty(category))
+			if (category != null)
 			{
-				query = query.Where(p => p.Categories.Any(c => c.Name == category));
+				var categoryIdsToSearch = _categoryService.GetAllDescendantCategoryIds((int)category);
+				query = query.Where(p => p.Categories.Any(c => categoryIdsToSearch.Contains(c.Id)));
 			}
 
 			if (!string.IsNullOrEmpty(material))

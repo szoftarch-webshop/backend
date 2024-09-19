@@ -21,9 +21,16 @@ namespace Backend.Controllers
 		// Gets a paginated list of orders with sorting and filtering options
 		[HttpGet]
 		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> GetOrders([FromQuery] int pageNumber = 1, int pageSize = 10, string sortBy = "date", string status = null, DateTime? startDate = null, DateTime? endDate = null)
+		public async Task<IActionResult> GetOrders(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "date", 
+            [FromQuery] string sortDirection = "asc", 
+            [FromQuery] string status = null,
+			[FromQuery] DateTime? startDate = null, 
+            [FromQuery] DateTime? endDate = null)
 		{
-			var orders = await _orderRepository.GetOrdersAsync(pageNumber, pageSize, sortBy, status, startDate, endDate);
+			var orders = await _orderRepository.GetOrdersAsync(pageNumber, pageSize, sortBy, sortDirection, status, startDate, endDate);
 			return Ok(orders);
 		}
 
