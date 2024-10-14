@@ -1,4 +1,5 @@
 ﻿using Backend.Dtos;
+using Backend.Dtos.Dashboard;
 using Backend.Dtos.Products;
 
 namespace Backend.Dal.Interfaces
@@ -21,9 +22,10 @@ namespace Backend.Dal.Interfaces
 		Task<ProductDto?> GetProductByIdAsync(int id);
 
 		// Admin
-		Task<int> AddProductAsync(CreateProductDto productDto);
-		Task<bool> UpdateProductAsync(int id, ProductDto productDto);
+		Task<int> AddProductAsync(ProductDto productDto, IFormFile image);
+		Task<bool> UpdateProductAsync(int id, ProductDto productDto, IFormFile? image);
 		Task<bool> DeleteProductAsync(int id);
 		Task<bool> RestockProductAsync(int id, int additionalStock);
+		public Task<IEnumerable<CategoryProductCountDto>> GetProductCountByCategoryAsync(int? categoryId = null);
 	}
 }

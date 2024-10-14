@@ -2,6 +2,7 @@
 using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
+using Backend.Dtos.Dashboard;
 using Backend.Dtos.Products;
 using Backend.Services;
 using Microsoft.EntityFrameworkCore;
@@ -12,16 +13,33 @@ namespace Backend.Dal.Repositories
 	{
 		private readonly CategoryService _categoryService;
 		private readonly DataContext _context;
+		private readonly IWebHostEnvironment _webHostEnvironment;
 
-		public ProductRepository(CategoryService categoryService, DataContext context)
+		public ProductRepository(CategoryService categoryService, DataContext context, IWebHostEnvironment webHostEnvironment)
 		{
 			_categoryService = categoryService;
 			_context = context;
+			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public async Task<int> AddProductAsync(CreateProductDto productDto)
+		public async Task<int> AddProductAsync(ProductDto productDto, IFormFile image)
 		{
-			var product = new Product
+			string? imagePath = null;
+
+			if (image != null)
+			{
+				var fileName = $"{Guid.NewGuid()}-{Path.GetFileName(image.FileName)}";
+				var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+				await using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await image.CopyToAsync(stream);
+				}
+
+				imagePath = Path.Combine("images", fileName);
+			}
+
+			var productEntity = new Product
 			{
 				SerialNumber = productDto.SerialNumber,
 				Name = productDto.Name,
@@ -30,24 +48,76 @@ namespace Backend.Dal.Repositories
 				Description = productDto.Description,
 				Price = productDto.Price,
 				Stock = productDto.Stock,
-				ImageUrl = productDto.ImageUrl
+				ImageUrl = imagePath,
+				Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList()
 			};
-			var invalidCategories = productDto.CategoryNames
-				.Except(_context.Category.Select(c => c.Name))
-				.ToList();
 
-			if (invalidCategories.Count != 0)
-			{
-				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
-			}
-
-			product.Categories = _context.Category.Where(c => productDto.CategoryNames.Contains(c.Name)).ToList();
-
-			_context.Product.Add(product);
+			_context.Product.Add(productEntity);
 			await _context.SaveChangesAsync();
 
-			return product.Id;
+			return productEntity.Id;
 		}
+		
+		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto, IFormFile? image)
+		{
+		    var product = await _context.Product.Include(p => p.Categories).FirstOrDefaultAsync(p => p.Id == id);
+		    if (product == null)
+		    {
+		        return false;
+		    }
+
+		    // Handle image upload if a new image is provided
+		    if (image != null)
+		    {
+		        // Check if the product already has an image, and if so, delete the old image
+		        if (!string.IsNullOrEmpty(product.ImageUrl))
+		        {
+		            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, product.ImageUrl);
+		            if (File.Exists(oldImagePath))
+		            {
+		                File.Delete(oldImagePath); // Delete the old image file
+		            }
+		        }
+
+		        // Save the new image
+		        var fileName = $"{Guid.NewGuid()}-{Path.GetFileName(image.FileName)}";
+		        var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+		        await using (var stream = new FileStream(filePath, FileMode.Create))
+		        {
+		            await image.CopyToAsync(stream);
+		        }
+
+		        product.ImageUrl = Path.Combine("images", fileName); // Update the ImageUrl with the new image
+		    }
+
+		    product.SerialNumber = productDto.SerialNumber;
+		    product.Name = productDto.Name;
+		    product.Weight = productDto.Weight;
+		    product.Material = productDto.Material;
+		    product.Description = productDto.Description;
+		    product.Price = productDto.Price;
+		    product.Stock = productDto.Stock;
+
+		    // Get existing categories from the database
+		    var existingCategories = await _context.Category
+		        .Where(c => productDto.CategoryNames.Contains(c.Name))
+		        .ToListAsync();
+
+		    // Clear the existing categories
+		    product.Categories.Clear();
+
+		    // Add the existing categories from the DTO
+		    foreach (var category in existingCategories)
+		    {
+		        product.Categories.Add(category);
+		    }
+
+		    _context.Product.Update(product);
+		    await _context.SaveChangesAsync();
+		    return true;
+		}
+
 
 		public async Task<bool> DeleteProductAsync(int id)
 		{
@@ -57,7 +127,17 @@ namespace Backend.Dal.Repositories
 				return false;
 			}
 
-			_context.Product.Remove(product);
+			// Check if the product has an image and delete the image file if it exists
+			if (!string.IsNullOrEmpty(product.ImageUrl))
+			{
+				var imagePath = Path.Combine(_webHostEnvironment.WebRootPath, product.ImageUrl);
+				if (File.Exists(imagePath))
+				{
+					File.Delete(imagePath); // Delete the image file from the server
+				}
+			}
+
+			_context.Product.Remove(product); // Remove the product from the database
 			await _context.SaveChangesAsync();
 			return true;
 		}
@@ -146,59 +226,6 @@ namespace Backend.Dal.Repositories
 			return true;
 		}
 
-		public async Task<bool> UpdateProductAsync(int id, ProductDto productDto)
-		{
-			var product = await _context.Product
-				.Include(p => p.Categories)
-				.FirstOrDefaultAsync(p => p.Id == id);
-
-			if (product == null)
-			{
-				return false;
-			}
-
-			product.SerialNumber = productDto.SerialNumber;
-			product.Name = productDto.Name;
-			product.Weight = productDto.Weight;
-			product.Material = productDto.Material;
-			product.Description = productDto.Description;
-			product.Price = productDto.Price;
-			product.Stock = productDto.Stock;
-			product.ImageUrl = productDto.ImageUrl;
-
-			var invalidCategories = productDto.CategoryNames
-				.Except(_context.Category.Select(c => c.Name))
-				.ToList();
-			if (invalidCategories.Count != 0)
-			{
-				throw new Exception($"Categories not found: {string.Join(", ", invalidCategories)}");
-			}
-
-			var newCategoryNames = productDto.CategoryNames;
-			var categoriesToRemove = product.Categories
-				.Where(c => !newCategoryNames.Contains(c.Name))
-				.ToList();
-
-			var categoriesToAdd = _context.Category
-				.Where(c => newCategoryNames.Contains(c.Name) && !product.Categories.Contains(c))
-				.ToList();
-
-			foreach (var category in categoriesToRemove)
-			{
-				product.Categories.Remove(category);
-			}
-
-			foreach (var category in categoriesToAdd)
-			{
-				product.Categories.Add(category);
-			}
-
-
-			_context.Product.Update(product);
-			await _context.SaveChangesAsync();
-			return true;
-		}
-
 		private static ProductDto MapToProductDto(Product product)
 		{
 			return new ProductDto {
@@ -213,6 +240,37 @@ namespace Backend.Dal.Repositories
 				ImageUrl =product.ImageUrl,
 				CategoryNames = product.Categories.Select(c => c.Name).ToList()
 			};
+		}
+		
+		public async Task<IEnumerable<CategoryProductCountDto>> GetProductCountByCategoryAsync(int? categoryId = null)
+		{
+			// Start with all products
+			var query = _context.Product.AsQueryable();
+
+			// If a categoryId is provided
+			if (categoryId.HasValue)
+			{
+				// Get the selected category and its immediate child categories
+				var categoryIds = await _context.Category
+					.Where(c => c.ParentCategoryId == categoryId) // Select the category's immediate children
+					.Select(c => c.Id)
+					.ToListAsync();
+
+				// Filter the products by these category IDs
+				query = query.Where(p => p.Categories.Any(cp => categoryIds.Contains(cp.Id)));
+			}
+
+			// Group products by their categories and return counts for each category
+			return await query
+				.SelectMany(p => p.Categories) // Flatten the category relations
+				.Where(c => !categoryId.HasValue || c.ParentCategoryId == categoryId) // Ensure we're only returning immediate children and parent
+				.GroupBy(c => c.Name) // Group by category name
+				.Select(g => new CategoryProductCountDto
+				{
+					CategoryName = g.Key,
+					ProductCount = g.Count()
+				})
+				.ToListAsync();
 		}
 	}
 }

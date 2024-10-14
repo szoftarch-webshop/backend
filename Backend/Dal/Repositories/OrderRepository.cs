@@ -2,6 +2,7 @@
 using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
+using Backend.Dtos.Dashboard;
 using Backend.Dtos.Orders;
 using Backend.Dtos.Products;
 using Microsoft.EntityFrameworkCore;
@@ -249,5 +250,127 @@ public class OrderRepository : IOrderRepository
                 },
             }
         };
+    }
+    
+    public async Task<int> GetTotalSalesAsync(int? categoryId = null)
+    {
+	    // If no categoryId is provided, calculate total sales for all categories
+	    if (categoryId == null)
+	    {
+		    return await _context.OrderItem.SumAsync(oi => oi.Amount);
+	    }
+
+	    // Get only the child categories of the provided parent category (excluding the parent itself)
+	    var categoryIds = await _context.Category
+		    .Where(c => c.ParentCategoryId == categoryId) // Only get child categories, not the parent
+		    .Select(c => c.Id)
+		    .ToListAsync();
+
+	    // Calculate total sales for the products in these child categories
+	    return await _context.OrderItem
+		    .Where(oi => oi.Product.Categories.Any(c => categoryIds.Contains(c.Id)))
+		    .SumAsync(oi => oi.Amount);
+    }
+
+    
+    public async Task<IEnumerable<CategorySalesDto>> GetSalesByCategoryAsync(int? categoryId = null)
+    {
+	    var query = _context.OrderItem.AsQueryable();
+
+	    if (categoryId.HasValue)
+	    {
+		    // Get the direct children of the selected category (excluding the parent)
+		    var categoryIds = await _context.Category
+			    .Where(c => c.ParentCategoryId == categoryId) // Only direct children
+			    .Select(c => c.Id)
+			    .ToListAsync();
+
+		    if (!categoryIds.Any())
+		    {
+			    // If there are no child categories, return an empty result
+			    return new List<CategorySalesDto>();
+		    }
+
+		    // Filter the order items by the products that belong to these child categories
+		    query = query.Where(oi => oi.Product.Categories.Any(cp => categoryIds.Contains(cp.Id)));
+	    }
+
+	    // Group by the actual categories that belong to the child categories
+	    return await query
+		    .Select(oi => new
+		    {
+			    CategoryName = oi.Product.Categories.FirstOrDefault(c => categoryId == null || c.ParentCategoryId == categoryId).Name, // Get the category name
+			    Amount = oi.Amount // Get the sales amount
+		    })
+		    .GroupBy(x => x.CategoryName)
+		    .Select(g => new CategorySalesDto
+		    {
+			    CategoryName = g.Key,
+			    SalesCount = g.Sum(x => x.Amount) // Sum the sales amount for each category
+		    })
+		    .ToListAsync();
+    }
+
+
+
+
+
+
+
+
+    public async Task<IEnumerable<ProductSalesDto>> GetTopSellingProductsAsync(int topN)
+    {
+	    return await _context.OrderItem
+		    .Include(oi => oi.Product)
+		    .GroupBy(oi => new { oi.Product.Name, oi.Product.Id })
+		    .Select(g => new ProductSalesDto
+		    {
+			    ProductName = g.Key.Name,
+			    ProductId = g.Key.Id,
+			    SalesCount = g.Sum(oi => oi.Amount)
+		    })
+		    .OrderByDescending(ps => ps.SalesCount)
+		    .Take(topN)
+		    .ToListAsync();
+    }
+
+    public async Task<IEnumerable<MonthlyCategorySalesDto>> GetMonthlySalesByCategoryAsync()
+    {
+	    return await _context.OrderItem
+		    .Include(oi => oi.Product)
+		    .ThenInclude(p => p.Categories)
+		    .GroupBy(oi => new
+			    { Month = oi.Order.OrderDate.Month, Category = oi.Product.Categories.FirstOrDefault().Name })
+		    .Select(g => new MonthlyCategorySalesDto
+		    {
+			    Month = g.Key.Month,
+			    Category = g.Key.Category,
+			    SalesCount = g.Sum(oi => oi.Amount)
+		    })
+		    .ToListAsync();
+    }
+    
+    private async Task<List<int>> GetCategoryAndChildIdsAsync(int categoryId)
+    {
+	    var categoryIds = new List<int> { categoryId };
+
+	    // Recursive method to get all child category IDs
+	    async Task GetChildCategories(int parentCategoryId)
+	    {
+		    var childCategories = await _context.Category
+			    .Where(c => c.ParentCategoryId == parentCategoryId)
+			    .ToListAsync();
+
+		    foreach (var childCategory in childCategories)
+		    {
+			    categoryIds.Add(childCategory.Id);
+			    await GetChildCategories(childCategory.Id); // Recursively add child categories
+		    }
+	    }
+
+	    // Fetch the child categories
+	    await GetChildCategories(categoryId);
+
+	    return categoryIds;
     }
 }
