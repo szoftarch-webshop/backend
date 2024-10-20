@@ -2,6 +2,7 @@
 using Backend.Dal.Entities;
 using Backend.Dal.Interfaces;
 using Backend.Dtos;
+using Backend.Dtos.Dashboard;
 using Backend.Dtos.Orders;
 using Backend.Dtos.Products;
 using Microsoft.EntityFrameworkCore;
@@ -249,5 +250,111 @@ public class OrderRepository : IOrderRepository
                 },
             }
         };
+    }
+    
+    public async Task<int> GetTotalSalesAsync(int? categoryId = null)
+    {
+	    if (categoryId == null)
+	    {
+		    return await _context.OrderItem.SumAsync(oi => oi.Amount);
+	    }
+	    
+	    var categoryIds = await _context.Category
+		    .Where(c => c.ParentCategoryId == categoryId)
+		    .Select(c => c.Id)
+		    .ToListAsync();
+
+	    return await _context.OrderItem
+		    .Where(oi => oi.Product.Categories.Any(c => categoryIds.Contains(c.Id)))
+		    .SumAsync(oi => oi.Amount);
+    }
+
+    
+    public async Task<IEnumerable<CategorySalesDto>> GetSalesByCategoryAsync(int? categoryId = null)
+    {
+	    var query = _context.OrderItem.AsQueryable();
+
+	    if (categoryId.HasValue)
+	    {
+		    var categoryIds = await _context.Category
+			    .Where(c => c.ParentCategoryId == categoryId)
+			    .Select(c => c.Id)
+			    .ToListAsync();
+
+		    if (!categoryIds.Any())
+		    {
+			    return new List<CategorySalesDto>();
+		    }
+		    
+		    query = query.Where(oi => oi.Product.Categories.Any(cp => categoryIds.Contains(cp.Id)));
+	    }
+	    
+	    return await query
+		    .Select(oi => new
+		    {
+			    CategoryName = oi.Product.Categories.FirstOrDefault(c => categoryId == null || c.ParentCategoryId == categoryId).Name,
+			    Amount = oi.Amount
+		    })
+		    .GroupBy(x => x.CategoryName)
+		    .Select(g => new CategorySalesDto
+		    {
+			    CategoryName = g.Key,
+			    SalesCount = g.Sum(x => x.Amount)
+		    })
+		    .ToListAsync();
+    }
+    
+    public async Task<IEnumerable<ProductSalesDto>> GetTopSellingProductsAsync(int topN)
+    {
+	    return await _context.OrderItem
+		    .Include(oi => oi.Product)
+		    .GroupBy(oi => new { oi.Product.Name, oi.Product.Id })
+		    .Select(g => new ProductSalesDto
+		    {
+			    ProductName = g.Key.Name,
+			    ProductId = g.Key.Id,
+			    SalesCount = g.Sum(oi => oi.Amount)
+		    })
+		    .OrderByDescending(ps => ps.SalesCount)
+		    .Take(topN)
+		    .ToListAsync();
+    }
+
+    public async Task<IEnumerable<MonthlyCategorySalesDto>> GetMonthlySalesByCategoryAsync()
+    {
+	    return await _context.OrderItem
+		    .Include(oi => oi.Product)
+		    .ThenInclude(p => p.Categories)
+		    .GroupBy(oi => new
+			    { Month = oi.Order.OrderDate.Month, Category = oi.Product.Categories.FirstOrDefault().Name })
+		    .Select(g => new MonthlyCategorySalesDto
+		    {
+			    Month = g.Key.Month,
+			    Category = g.Key.Category,
+			    SalesCount = g.Sum(oi => oi.Amount)
+		    })
+		    .ToListAsync();
+    }
+    
+    private async Task<List<int>> GetCategoryAndChildIdsAsync(int categoryId)
+    {
+	    var categoryIds = new List<int> { categoryId };
+	    
+	    async Task GetChildCategories(int parentCategoryId)
+	    {
+		    var childCategories = await _context.Category
+			    .Where(c => c.ParentCategoryId == parentCategoryId)
+			    .ToListAsync();
+
+		    foreach (var childCategory in childCategories)
+		    {
+			    categoryIds.Add(childCategory.Id);
+			    await GetChildCategories(childCategory.Id);
+		    }
+	    }
+	    
+	    await GetChildCategories(categoryId);
+
+	    return categoryIds;
     }
 }

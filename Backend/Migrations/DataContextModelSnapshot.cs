@@ -42,7 +42,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ParentCategoryId");
 
-                    b.ToTable("Category", (string)null);
+                    b.ToTable("Category");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Invoice", b =>
@@ -98,7 +98,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("PaymentMethodId");
 
-                    b.ToTable("Invoice", (string)null);
+                    b.ToTable("Invoice");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Order", b =>
@@ -130,7 +130,7 @@ namespace Backend.Migrations
                     b.HasIndex("ShippingAddressId")
                         .IsUnique();
 
-                    b.ToTable("Order", (string)null);
+                    b.ToTable("Order");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.OrderItem", b =>
@@ -159,7 +159,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItem", (string)null);
+                    b.ToTable("OrderItem");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.PaymentMethod", b =>
@@ -177,7 +177,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PaymentMethod", (string)null);
+                    b.ToTable("PaymentMethod");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.Product", b =>
@@ -220,7 +220,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Product", (string)null);
+                    b.ToTable("Product");
                 });
 
             modelBuilder.Entity("Backend.Dal.Entities.ShippingAddress", b =>
@@ -268,7 +268,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ShippingAddress", (string)null);
+                    b.ToTable("ShippingAddress");
                 });
 
             modelBuilder.Entity("CategoryProduct", b =>
@@ -283,7 +283,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductsId");
 
-                    b.ToTable("CategoryProduct", (string)null);
+                    b.ToTable("CategoryProduct");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

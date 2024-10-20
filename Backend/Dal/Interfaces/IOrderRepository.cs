@@ -1,4 +1,5 @@
 ﻿using Backend.Dtos;
+using Backend.Dtos.Dashboard;
 using Backend.Dtos.Orders;
 
 namespace Backend.Dal.Interfaces;
@@ -18,4 +19,12 @@ public interface IOrderRepository
 
 	// DELETE: Delete an existing order
 	Task<bool> DeleteOrderAsync(int orderId);
+
+	public Task<int> GetTotalSalesAsync(int? categoryId = null);
+
+	public Task<IEnumerable<CategorySalesDto>> GetSalesByCategoryAsync(int? categoryId = null);
+
+	public Task<IEnumerable<ProductSalesDto>> GetTopSellingProductsAsync(int topN);
+
+	public Task<IEnumerable<MonthlyCategorySalesDto>> GetMonthlySalesByCategoryAsync();
 }

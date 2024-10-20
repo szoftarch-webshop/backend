@@ -5,6 +5,7 @@ using Backend.Dtos.Products;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace Backend.Controllers
 {
@@ -54,11 +55,19 @@ namespace Backend.Controllers
 		// POST: api/Product
 		[HttpPost]
 		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> AddProduct(CreateProductDto productDto)
+		[Consumes("multipart/form-data")]
+		public async Task<IActionResult> AddProduct([FromForm] string productDtoJson, IFormFile image)
 		{
+			var productDto = JsonConvert.DeserializeObject<ProductDto>(productDtoJson);
+    
+			if (productDto == null)
+			{
+				return BadRequest("Invalid productDto data.");
+			}
+			
 			try
 			{
-				var productId = await _productRepository.AddProductAsync(productDto);
+				var productId = await _productRepository.AddProductAsync(productDto, image);
 				return CreatedAtAction(nameof(GetProductById), new { id = productId }, productId);
 			}
 			catch (Exception ex)
@@ -70,18 +79,25 @@ namespace Backend.Controllers
 		// PUT: api/Product/{id}
 		[HttpPut("{id}")]
 		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> UpdateProduct(int id, ProductDto productDto)
+		[Consumes("multipart/form-data")]
+		public async Task<IActionResult> UpdateProduct(int id, [FromForm] string productDtoJson, IFormFile? image)
 		{
+			var productDto = JsonConvert.DeserializeObject<ProductDto>(productDtoJson);
+
+			if (productDto == null)
+			{
+				return BadRequest("Invalid productDto data.");
+			}
+
 			try
 			{
-				var success = await _productRepository.UpdateProductAsync(id, productDto);
+				var success = await _productRepository.UpdateProductAsync(id, productDto, image);
 				return success ? NoContent() : NotFound();
 			}
-			catch (InvalidOperationException ex)
+			catch (Exception ex)
 			{
-				return BadRequest(new { message = ex.Message});
+				return BadRequest(new { message = ex.Message });
 			}
-			
 		}
 
 		// DELETE: api/Product/{id}

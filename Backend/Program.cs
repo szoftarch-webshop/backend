@@ -25,6 +25,7 @@ public class Program
 		builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
 		builder.Services.AddScoped<CategoryService>();
+		builder.Services.AddScoped<DashboardService>();
 
 		// Add Identity services
 		builder.Services.AddIdentityApiEndpoints<IdentityUser>()
@@ -55,7 +56,8 @@ public class Program
 		});
 
 		var app = builder.Build();
-
+		
+		app.UseStaticFiles();
 		// Configure the HTTP request pipeline.
 		if (app.Environment.IsDevelopment())
 		{
@@ -71,6 +73,8 @@ public class Program
 		// Map identity API endpoints
 		app.MapIdentityApi<IdentityUser>();
 		app.MapControllers();
+		
+		
 
 		app.MapPost("/logout", async (SignInManager<IdentityUser> signInManager) =>
 		{
