@@ -8,7 +8,7 @@ public class DashboardService
     private readonly IOrderRepository _orderRepository;
     private readonly IProductRepository _productRepository;
 
-    public DashboardService(ICategoryRepository categoryRepository, IOrderRepository orderRepository, IProductRepository productRepository)
+    public DashboardService(IOrderRepository orderRepository, IProductRepository productRepository)
     {
         _orderRepository = orderRepository;
         _productRepository = productRepository;
@@ -23,10 +23,8 @@ public class DashboardService
     // Products Sold by Percentage (Pie Chart)
     public async Task<IEnumerable<CategorySalesPercentageDto>> GetProductSalesPercentageByCategoryAsync(int? categoryId = null)
     {
-        // Get the total sales for the parent category and its children (if categoryId is specified)
         var totalSales = await _orderRepository.GetTotalSalesAsync(categoryId);
-
-        // Get the sales for the direct child categories
+        
         var salesByCategory = await _orderRepository.GetSalesByCategoryAsync(categoryId);
 
         return salesByCategory.Select(s => new CategorySalesPercentageDto

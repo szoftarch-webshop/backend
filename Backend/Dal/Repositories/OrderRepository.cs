@@ -254,19 +254,16 @@ public class OrderRepository : IOrderRepository
     
     public async Task<int> GetTotalSalesAsync(int? categoryId = null)
     {
-	    // If no categoryId is provided, calculate total sales for all categories
 	    if (categoryId == null)
 	    {
 		    return await _context.OrderItem.SumAsync(oi => oi.Amount);
 	    }
-
-	    // Get only the child categories of the provided parent category (excluding the parent itself)
+	    
 	    var categoryIds = await _context.Category
-		    .Where(c => c.ParentCategoryId == categoryId) // Only get child categories, not the parent
+		    .Where(c => c.ParentCategoryId == categoryId)
 		    .Select(c => c.Id)
 		    .ToListAsync();
 
-	    // Calculate total sales for the products in these child categories
 	    return await _context.OrderItem
 		    .Where(oi => oi.Product.Categories.Any(c => categoryIds.Contains(c.Id)))
 		    .SumAsync(oi => oi.Amount);
@@ -279,45 +276,34 @@ public class OrderRepository : IOrderRepository
 
 	    if (categoryId.HasValue)
 	    {
-		    // Get the direct children of the selected category (excluding the parent)
 		    var categoryIds = await _context.Category
-			    .Where(c => c.ParentCategoryId == categoryId) // Only direct children
+			    .Where(c => c.ParentCategoryId == categoryId)
 			    .Select(c => c.Id)
 			    .ToListAsync();
 
 		    if (!categoryIds.Any())
 		    {
-			    // If there are no child categories, return an empty result
 			    return new List<CategorySalesDto>();
 		    }
-
-		    // Filter the order items by the products that belong to these child categories
+		    
 		    query = query.Where(oi => oi.Product.Categories.Any(cp => categoryIds.Contains(cp.Id)));
 	    }
-
-	    // Group by the actual categories that belong to the child categories
+	    
 	    return await query
 		    .Select(oi => new
 		    {
-			    CategoryName = oi.Product.Categories.FirstOrDefault(c => categoryId == null || c.ParentCategoryId == categoryId).Name, // Get the category name
-			    Amount = oi.Amount // Get the sales amount
+			    CategoryName = oi.Product.Categories.FirstOrDefault(c => categoryId == null || c.ParentCategoryId == categoryId).Name,
+			    Amount = oi.Amount
 		    })
 		    .GroupBy(x => x.CategoryName)
 		    .Select(g => new CategorySalesDto
 		    {
 			    CategoryName = g.Key,
-			    SalesCount = g.Sum(x => x.Amount) // Sum the sales amount for each category
+			    SalesCount = g.Sum(x => x.Amount)
 		    })
 		    .ToListAsync();
     }
-
-
-
-
-
-
-
-
+    
     public async Task<IEnumerable<ProductSalesDto>> GetTopSellingProductsAsync(int topN)
     {
 	    return await _context.OrderItem
@@ -353,8 +339,7 @@ public class OrderRepository : IOrderRepository
     private async Task<List<int>> GetCategoryAndChildIdsAsync(int categoryId)
     {
 	    var categoryIds = new List<int> { categoryId };
-
-	    // Recursive method to get all child category IDs
+	    
 	    async Task GetChildCategories(int parentCategoryId)
 	    {
 		    var childCategories = await _context.Category
@@ -364,11 +349,10 @@ public class OrderRepository : IOrderRepository
 		    foreach (var childCategory in childCategories)
 		    {
 			    categoryIds.Add(childCategory.Id);
-			    await GetChildCategories(childCategory.Id); // Recursively add child categories
+			    await GetChildCategories(childCategory.Id);
 		    }
 	    }
-
-	    // Fetch the child categories
+	    
 	    await GetChildCategories(categoryId);
 
 	    return categoryIds;

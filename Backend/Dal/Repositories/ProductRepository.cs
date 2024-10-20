@@ -133,11 +133,11 @@ namespace Backend.Dal.Repositories
 				var imagePath = Path.Combine(_webHostEnvironment.WebRootPath, product.ImageUrl);
 				if (File.Exists(imagePath))
 				{
-					File.Delete(imagePath); // Delete the image file from the server
+					File.Delete(imagePath);
 				}
 			}
 
-			_context.Product.Remove(product); // Remove the product from the database
+			_context.Product.Remove(product);
 			await _context.SaveChangesAsync();
 			return true;
 		}
@@ -244,27 +244,22 @@ namespace Backend.Dal.Repositories
 		
 		public async Task<IEnumerable<CategoryProductCountDto>> GetProductCountByCategoryAsync(int? categoryId = null)
 		{
-			// Start with all products
 			var query = _context.Product.AsQueryable();
-
-			// If a categoryId is provided
+			
 			if (categoryId.HasValue)
 			{
-				// Get the selected category and its immediate child categories
 				var categoryIds = await _context.Category
-					.Where(c => c.ParentCategoryId == categoryId) // Select the category's immediate children
+					.Where(c => c.ParentCategoryId == categoryId)
 					.Select(c => c.Id)
 					.ToListAsync();
-
-				// Filter the products by these category IDs
+				
 				query = query.Where(p => p.Categories.Any(cp => categoryIds.Contains(cp.Id)));
 			}
-
-			// Group products by their categories and return counts for each category
+			
 			return await query
-				.SelectMany(p => p.Categories) // Flatten the category relations
-				.Where(c => !categoryId.HasValue || c.ParentCategoryId == categoryId) // Ensure we're only returning immediate children and parent
-				.GroupBy(c => c.Name) // Group by category name
+				.SelectMany(p => p.Categories)
+				.Where(c => !categoryId.HasValue || c.ParentCategoryId == categoryId)
+				.GroupBy(c => c.Name)
 				.Select(g => new CategoryProductCountDto
 				{
 					CategoryName = g.Key,
