@@ -1,6 +1,7 @@
 ﻿using Backend.Dtos;
 using Backend.Dtos.Dashboard;
 using Backend.Dtos.Orders;
+using Backend.Dtos.Orders.InitiatePayment;
 
 namespace Backend.Dal.Interfaces;
 
@@ -27,4 +28,6 @@ public interface IOrderRepository
 	public Task<IEnumerable<ProductSalesDto>> GetTopSellingProductsAsync(int topN);
 
 	public Task<IEnumerable<MonthlyCategorySalesDto>> GetMonthlySalesByCategoryAsync();
+
+	public Task<PaymentResponse> InitializeOrder(PaymentDetails paymentDetails);
 }
