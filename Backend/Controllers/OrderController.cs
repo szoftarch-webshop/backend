@@ -1,5 +1,6 @@
 using Backend.Dal.Interfaces;
 using Backend.Dtos.Orders;
+using Backend.Dtos.Orders.InitiatePayment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -87,6 +88,17 @@ namespace Backend.Controllers
         {
 			var deleted = await _orderRepository.DeleteOrderAsync(id);
 			return deleted ? NoContent() : NotFound();
+		}
+		
+		[HttpPost("initiate-payment")]
+		public async Task<IActionResult> InitiatePayment([FromBody] PaymentDetails paymentDetails)
+		{
+			var response = await _orderRepository.InitializeOrder(paymentDetails);
+			if (!response.IsSuccessful)
+			{
+				return BadRequest(response );
+			}
+			return Ok(response);
 		}
     }
 }

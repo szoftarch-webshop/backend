@@ -15,5 +15,6 @@
 		public int InvoiceId { get; set; }
 		public ShippingAddress ShippingAddress { get; set; }
 		public Invoice Invoice { get; set; }
+		public string PaymentId { get; set; }
 	}
 }
